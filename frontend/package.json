@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint ",
-    "preview": "vite preview"
+    "build": "tsc -b && npm run lint && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "nswag": "nswag openapi2tsclient /input:src/utils/nswag.json /output:src/models/clients.ts"
   },
   "dependencies": {
     "react": "^19.1.0",
