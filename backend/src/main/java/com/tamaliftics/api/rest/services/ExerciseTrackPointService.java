@@ -55,6 +55,7 @@ public class ExerciseTrackPointService {
                 createExerciseTrackPointDto.repsCount(),
                 createExerciseTrackPointDto.setsCount(),
                 createExerciseTrackPointDto.description(),
+                createExerciseTrackPointDto.weight() != null ? createExerciseTrackPointDto.weight() : 0f,
                 exercise
         );
 
@@ -87,7 +88,10 @@ public class ExerciseTrackPointService {
         if (updateExerciseTrackPointDto.description() != null) {
             trackPoint.setDescription(updateExerciseTrackPointDto.description());
         }
-        
+        if (updateExerciseTrackPointDto.weight() != null) {
+            trackPoint.setWeight(updateExerciseTrackPointDto.weight());
+        }
+
         // Update exercise if provided
         if (updateExerciseTrackPointDto.exerciseId() != null) {
             Optional<Exercise> exerciseOptional = exerciseRepository.findById(updateExerciseTrackPointDto.exerciseId());
@@ -142,15 +146,15 @@ public class ExerciseTrackPointService {
         List<Exercise> exercises = exerciseRepository.findAllById(exerciseIds).stream()
                 .filter(exercise -> exercise.getUser().getId().equals(userId))
                 .collect(Collectors.toList());
-        
+
         if (exercises.isEmpty()) {
             return List.of();
         }
-        
+
         List<UUID> validExerciseIds = exercises.stream()
                 .map(Exercise::getId)
                 .collect(Collectors.toList());
-        
+
         return exerciseTrackPointRepository.findByExerciseIdIn(validExerciseIds).stream()
                 .map(this::mapToGetExerciseTrackPointDto)
                 .collect(Collectors.toList());
@@ -203,6 +207,7 @@ public class ExerciseTrackPointService {
                 trackPoint.getRepsCount(),
                 trackPoint.getSetsCount(),
                 trackPoint.getDescription(),
+                trackPoint.getWeight(),
                 trackPoint.getExercise().getId()
         );
     }

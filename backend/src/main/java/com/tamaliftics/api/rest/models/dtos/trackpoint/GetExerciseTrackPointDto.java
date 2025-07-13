@@ -12,6 +12,7 @@ public record GetExerciseTrackPointDto(
     int repsCount,
     int setsCount,
     String description,
+    float weight,
     UUID exerciseId
 ) {
 }

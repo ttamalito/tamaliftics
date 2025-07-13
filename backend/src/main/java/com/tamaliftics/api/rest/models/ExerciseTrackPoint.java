@@ -28,6 +28,9 @@ public class ExerciseTrackPoint {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "weight")
+    private float weight;
+
     @ManyToOne
     @JoinColumn(name = "exercise_id", nullable = false)
     private Exercise exercise;
@@ -35,11 +38,12 @@ public class ExerciseTrackPoint {
     public ExerciseTrackPoint() {
     }
 
-    public ExerciseTrackPoint(LocalDate date, int repsCount, int setsCount, String description, Exercise exercise) {
+    public ExerciseTrackPoint(LocalDate date, int repsCount, int setsCount, String description, float weight, Exercise exercise) {
         this.date = date;
         this.repsCount = repsCount;
         this.setsCount = setsCount;
         this.description = description;
+        this.weight = weight;
         this.exercise = exercise;
     }
 
@@ -81,6 +85,14 @@ public class ExerciseTrackPoint {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public float getWeight() {
+        return weight;
+    }
+
+    public void setWeight(float weight) {
+        this.weight = weight;
     }
 
     public Exercise getExercise() {

@@ -14,17 +14,19 @@ public record CreateExerciseTrackPointDto(
     @NotNull(message = "Date is required")
     @PastOrPresent(message = "Date must be in the past or present")
     LocalDate date,
-    
+
     @NotNull(message = "Reps count is required")
     @Positive(message = "Reps count must be positive")
     Integer repsCount,
-    
+
     @NotNull(message = "Sets count is required")
     @Positive(message = "Sets count must be positive")
     Integer setsCount,
-    
+
     String description,
-    
+
+    Float weight,
+
     @NotNull(message = "Exercise ID is required")
     UUID exerciseId
 ) {

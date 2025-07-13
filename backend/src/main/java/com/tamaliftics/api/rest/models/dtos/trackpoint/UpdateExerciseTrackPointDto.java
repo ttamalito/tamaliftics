@@ -13,18 +13,20 @@ import java.util.UUID;
 public record UpdateExerciseTrackPointDto(
     @NotNull(message = "ID is required")
     UUID id,
-    
+
     @PastOrPresent(message = "Date must be in the past or present")
     LocalDate date,
-    
+
     @Positive(message = "Reps count must be positive")
     Integer repsCount,
-    
+
     @Positive(message = "Sets count must be positive")
     Integer setsCount,
-    
+
     String description,
-    
+
+    Float weight,
+
     UUID exerciseId
 ) {
 }

@@ -52,14 +52,14 @@ public class ExerciseService {
     public Optional<GetExerciseDto> createExercise(CreateExerciseDto createExerciseDto, UUID userId) {
         Optional<User> userOptional = userRepository.findById(userId);
         Optional<ExerciseCategory> categoryOptional = exerciseCategoryRepository.findById(createExerciseDto.categoryId());
-        
+
         if (userOptional.isEmpty() || categoryOptional.isEmpty() || !categoryOptional.get().getUser().getId().equals(userId)) {
             return Optional.empty();
         }
 
         User user = userOptional.get();
         ExerciseCategory category = categoryOptional.get();
-        
+
         Exercise exercise = new Exercise(
                 createExerciseDto.name(),
                 createExerciseDto.description(),
@@ -90,7 +90,7 @@ public class ExerciseService {
         if (updateExerciseDto.description() != null) {
             exercise.setDescription(updateExerciseDto.description());
         }
-        
+
         // Update category if provided
         if (updateExerciseDto.categoryId() != null) {
             Optional<ExerciseCategory> categoryOptional = exerciseCategoryRepository.findById(updateExerciseDto.categoryId());
@@ -192,11 +192,11 @@ public class ExerciseService {
     private GetExerciseDto mapToGetExerciseDto(Exercise exercise) {
         GetExerciseCategoryDto categoryDto = exerciseCategoryService.getExerciseCategoryById(
                 exercise.getCategory().getId(), exercise.getUser().getId()).orElse(null);
-        
+
         List<GetExerciseTrackPointDto> trackPointDtos = exercise.getTrackPoints().stream()
                 .map(this::mapToGetExerciseTrackPointDto)
                 .collect(Collectors.toList());
-        
+
         return new GetExerciseDto(
                 exercise.getId(),
                 exercise.getName(),
@@ -206,7 +206,7 @@ public class ExerciseService {
                 exercise.getUser().getId()
         );
     }
-    
+
     /**
      * Map an ExerciseTrackPoint entity to a GetExerciseTrackPointDto.
      * @param trackPoint the track point entity
@@ -219,6 +219,7 @@ public class ExerciseService {
                 trackPoint.getRepsCount(),
                 trackPoint.getSetsCount(),
                 trackPoint.getDescription(),
+                trackPoint.getWeight(),
                 trackPoint.getExercise().getId()
         );
     }
