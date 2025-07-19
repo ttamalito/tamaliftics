@@ -20,7 +20,7 @@ export default defineConfig({
     //   key: '/Users/jjgon/Documents/https_certs/key.pem', //uncomment to use http2 and https
     //   cert: '/Users/jjgon/Documents/https_certs/cert.pem',
     // },
-    port: 3000,
+    port: 3001,
     open: '/',
   },
 });
