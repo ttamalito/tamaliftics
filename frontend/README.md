@@ -1,69 +1,145 @@
-# React + TypeScript + Vite
+# Tamaliftics
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Tamaliftics is a comprehensive fitness tracking application that helps users manage their workouts, track exercises, monitor diet, and record weight progress. The application provides a user-friendly interface for fitness enthusiasts to plan and track their fitness journey.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### User Authentication
+- Secure login and registration
+- JWT-based authentication
 
-## Expanding the ESLint configuration
+### Workout Management
+- Create and manage workout plans
+- Schedule workouts
+- Track workout progress
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Exercise Tracking
+- Browse exercise library
+- Categorize exercises by muscle groups
+- Track exercise performance and progress
+- Record exercise track points
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Weight Tracking
+- Record and visualize weight measurements
+- Track weight progress over time
+- Set weight goals
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### Diet Management
+- Track daily food intake
+- Monitor nutritional information
+- Plan meals
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Dashboard
+- Overview of fitness progress
+- Visual representations of key metrics
+- Quick access to main features
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Technical Stack
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Frontend
+- **Framework**: React 19.1.0
+- **Language**: TypeScript
+- **Build Tool**: Vite 7.0.4
+- **UI Library**: Mantine UI (v7.17.x)
+- **Routing**: React Router 7.2.0
+- **Charts**: Recharts 2.0.10
+- **HTTP Client**: Axios 1.8.1
+- **Form Handling**: Mantine Form
+- **Date Handling**: Dayjs 1.11.13
+- **Code Quality**: ESLint 9.30.1, Prettier 3.5.2
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Backend
+- **Framework**: Spring Boot 3.3.5
+- **Language**: Java 21
+- **Database**: MySQL 8.0.28
+- **ORM**: Spring Data JPA
+- **Security**: Spring Security, JWT
+- **API Documentation**: SpringDoc OpenAPI
+- **Build Tool**: Maven
+
+## Setup and Installation
+
+### Prerequisites
+- Node.js (v18 or higher)
+- Java 21
+- MySQL 8.0.28
+- Maven
+
+### Frontend Setup
+1. Navigate to the frontend directory:
+   ```
+   cd frontend
+   ```
+
+2. Install dependencies:
+   ```
+   npm install
+   ```
+
+3. Create a `.env` file with the following variables:
+   ```
+   VITE_API_URL=http://localhost:8080/api
+   ```
+
+4. Start the development server:
+   ```
+   npm run dev
+   ```
+
+### Backend Setup
+1. Navigate to the backend directory:
+   ```
+   cd backend
+   ```
+
+2. Configure the database connection in `src/main/resources/application.properties` or `application.yml`
+
+3. Build the application:
+   ```
+   mvn clean install
+   ```
+
+4. Run the application:
+   ```
+   mvn spring-boot:run
+   ```
+
+## Usage
+
+### Authentication
+1. Register a new account or log in with existing credentials
+2. The system will provide a JWT token for authenticated requests
+
+### Workout Management
+1. Navigate to the Workout section
+2. Create a new workout plan or select an existing one
+3. Add exercises to your workout plan
+4. Track your progress as you complete workouts
+
+### Exercise Tracking
+1. Browse the exercise library in the Exercises section
+2. Filter exercises by category
+3. Record your performance for each exercise
+4. View your progress over time
+
+### Weight Tracking
+1. Navigate to the Weight section
+2. Record your weight measurements
+3. View your weight progress on the chart
+
+### Diet Management
+1. Navigate to the Diet section
+2. Record your daily food intake
+3. Monitor your nutritional information
+
+## API Documentation
+The API documentation is available at `http://localhost:8080/swagger-ui.html` when the backend is running.
+
+## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+This project is licensed under the MIT License.
