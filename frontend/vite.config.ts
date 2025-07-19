@@ -23,4 +23,8 @@ export default defineConfig({
     port: 3001,
     open: '/',
   },
+  preview: {
+    port: 3002,
+    open: '/',
+  },
 });
