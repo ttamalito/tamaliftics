@@ -9,7 +9,6 @@ import {
   Stack,
   Card,
   ActionIcon,
-  Modal,
   TextInput,
   Textarea,
   Select,
@@ -40,9 +39,26 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { notifications } from '@mantine/notifications';
-import { ICreateExerciseDto, IGetExerciseCategoryDto } from '@clients';
-import { usePostExercise } from '@hooks/requests/exerciseRequests';
+import {
+  ICreateExerciseDto,
+  IGetExerciseCategoryDto,
+  IGetExerciseDto,
+  ICreateExerciseTrackPointDto,
+  IUpdateExerciseTrackPointDto,
+  IGetExerciseTrackPointDto,
+  GetExerciseCategoryDto,
+} from '@clients';
+import {
+  usePostExercise,
+  useGetAllExercises,
+} from '@hooks/requests/exerciseRequests';
 import { useGetAllExerciseCategories } from '@hooks/requests/exerciseCategoryRequests';
+import {
+  usePostExerciseTrackPoint,
+  usePutExerciseTrackPoint,
+  useGetTrackPointsForExercise,
+  useDeleteExerciseTrackPoint,
+} from '@hooks/requests/exerciseTrackPointRequests';
 
 // Types for exercises
 interface ExerciseTrackPoint {
@@ -54,30 +70,26 @@ interface ExerciseTrackPoint {
   description?: string;
 }
 
-interface Exercise {
-  id: string;
-  name: string;
-  description: string;
-  categoryId: string;
-  trackPoints: ExerciseTrackPoint[];
-}
+// This interface is no longer needed as we're using IGetExerciseDto from @clients
 
 // Form values for exercise creation/editing is now using ICreateExerciseDto from @clients
 
-// Form values for track point creation
-interface TrackPointFormValues {
-  date: Date;
-  reps: number;
-  sets: number;
-  weight: number;
-  description: string;
-}
+// We're using ICreateExerciseTrackPointDto and IUpdateExerciseTrackPointDto from @clients
 
 export function ExercisesPage() {
   // State for categories
   const [categories, setCategories] = useState<IGetExerciseCategoryDto[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [, setCategoriesLoading] = useState(false);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  // State for exercises
+  const [exercises, setExercises] = useState<IGetExerciseDto[]>([]);
+  const [exercisesLoading, setExercisesLoading] = useState(false);
+  const [exercisesError, setExercisesError] = useState<string | null>(null);
+  const [selectedExercise, setSelectedExercise] =
+    useState<IGetExerciseDto | null>(null);
+  const [editingExercise, setEditingExercise] =
+    useState<IGetExerciseDto | null>(null);
 
   const [
     exerciseModalOpened,
@@ -88,8 +100,20 @@ export function ExercisesPage() {
     { open: openTrackPointModal, close: closeTrackPointModal },
   ] = useDisclosure(false);
 
+  // State for track points
+  const [trackPoints, setTrackPoints] = useState<IGetExerciseTrackPointDto[]>(
+    [],
+  );
+  const [trackPointsLoading, setTrackPointsLoading] = useState(false);
+  const [trackPointsError, setTrackPointsError] = useState<string | null>(null);
+
   // API hooks
   const [getAllExerciseCategories] = useGetAllExerciseCategories();
+  const [getAllExercises] = useGetAllExercises();
+  const [createTrackPoint] = usePostExerciseTrackPoint();
+  const [updateTrackPoint] = usePutExerciseTrackPoint();
+  const [getTrackPointsForExercise] = useGetTrackPointsForExercise();
+  const [deleteTrackPoint] = useDeleteExerciseTrackPoint();
 
   // Fetch all categories
   const fetchCategories = useCallback(async () => {
@@ -116,115 +140,67 @@ export function ExercisesPage() {
     }
   }, []);
 
-  // Fetch categories on component mount
+  // Fetch all exercises
+  const fetchExercises = useCallback(async () => {
+    setExercisesLoading(true);
+    setExercisesError(null);
+    try {
+      const response = await getAllExercises();
+      if (response?.data) {
+        setExercises(response.data);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to fetch exercises';
+      setExercisesError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+      });
+    } finally {
+      setExercisesLoading(false);
+    }
+  }, []);
+
+  // Fetch track points for the selected exercise
+  const fetchTrackPoints = useCallback(async (exerciseId: string) => {
+    setTrackPointsLoading(true);
+    setTrackPointsError(null);
+    try {
+      const response = await getTrackPointsForExercise(exerciseId);
+      if (response?.data) {
+        setTrackPoints(response.data);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to fetch track points';
+      setTrackPointsError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+      });
+    } finally {
+      setTrackPointsLoading(false);
+    }
+  }, []);
+
+  // Fetch categories and exercises on component mount
   useEffect(() => {
     fetchCategories();
-  }, [exerciseModalOpened]);
+    fetchExercises();
+  }, []);
 
-  // Mock data for exercises
-  const [exercises, setExercises] = useState<Exercise[]>([
-    {
-      id: '1',
-      name: 'Bench Press',
-      description: 'Barbell bench press for chest development',
-      categoryId: '1',
-      trackPoints: [
-        {
-          id: '1',
-          date: new Date(2025, 6, 1),
-          reps: 10,
-          sets: 3,
-          weight: 80,
-          description: 'Felt strong',
-        },
-        {
-          id: '2',
-          date: new Date(2025, 6, 8),
-          reps: 10,
-          sets: 3,
-          weight: 85,
-          description: 'Increased weight',
-        },
-        {
-          id: '3',
-          date: new Date(2025, 6, 15),
-          reps: 8,
-          sets: 4,
-          weight: 90,
-          description: 'Harder but good',
-        },
-      ],
-    },
-    {
-      id: '2',
-      name: 'Deadlift',
-      description: 'Barbell deadlift for back and overall strength',
-      categoryId: '2',
-      trackPoints: [
-        {
-          id: '1',
-          date: new Date(2025, 6, 2),
-          reps: 8,
-          sets: 3,
-          weight: 120,
-          description: 'Good form',
-        },
-        {
-          id: '2',
-          date: new Date(2025, 6, 9),
-          reps: 8,
-          sets: 3,
-          weight: 125,
-          description: 'Felt heavy',
-        },
-        {
-          id: '3',
-          date: new Date(2025, 6, 16),
-          reps: 6,
-          sets: 4,
-          weight: 130,
-          description: 'New PR',
-        },
-      ],
-    },
-    {
-      id: '3',
-      name: 'Squat',
-      description: 'Barbell squat for leg development',
-      categoryId: '3',
-      trackPoints: [
-        {
-          id: '1',
-          date: new Date(2025, 6, 3),
-          reps: 10,
-          sets: 3,
-          weight: 100,
-          description: 'Good depth',
-        },
-        {
-          id: '2',
-          date: new Date(2025, 6, 10),
-          reps: 10,
-          sets: 3,
-          weight: 105,
-          description: 'Increased weight',
-        },
-        {
-          id: '3',
-          date: new Date(2025, 6, 17),
-          reps: 8,
-          sets: 4,
-          weight: 110,
-          description: 'Challenging',
-        },
-      ],
-    },
-  ]);
+  // Fetch track points when an exercise is selected
+  useEffect(() => {
+    if (selectedExercise) {
+      fetchTrackPoints(selectedExercise.id!);
+    } else {
+      setTrackPoints([]);
+    }
+  }, [selectedExercise]);
 
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(
-    null,
-  );
-  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [editingTrackPoint, setEditingTrackPoint] =
     useState<ExerciseTrackPoint | null>(null);
   const [loading, setLoading] = useState(false);
@@ -249,38 +225,79 @@ export function ExercisesPage() {
     },
   });
 
-  const trackPointForm = useForm<TrackPointFormValues>({
+  // Form for creating new track points
+  const createTrackPointForm = useForm<ICreateExerciseTrackPointDto>({
     initialValues: {
       date: new Date(),
-      reps: 0,
-      sets: 0,
+      repsCount: 0,
+      setsCount: 0,
       weight: 0,
       description: '',
+      exerciseId: '',
     },
     validate: {
       date: (value) => {
         return value ? null : 'Date is required';
       },
-      reps: (value) => {
+      repsCount: (value) => {
         return value <= 0 ? 'Reps must be greater than 0' : null;
       },
-      sets: (value) => {
+      setsCount: (value) => {
         return value <= 0 ? 'Sets must be greater than 0' : null;
       },
       weight: (value) => {
-        return value < 0 ? 'Weight cannot be negative' : null;
+        return value && value < 0 ? 'Weight cannot be negative' : null;
+      },
+      exerciseId: (value) => {
+        return value ? null : 'Exercise ID is required';
+      },
+    },
+  });
+
+  // Form for updating existing track points
+  const updateTrackPointForm = useForm<IUpdateExerciseTrackPointDto>({
+    initialValues: {
+      id: '',
+      date: new Date(),
+      repsCount: 0,
+      setsCount: 0,
+      weight: 0,
+      description: '',
+      exerciseId: '',
+    },
+    validate: {
+      id: (value) => {
+        return value ? null : 'ID is required';
+      },
+      date: (value) => {
+        return value ? null : 'Date is required';
+      },
+      repsCount: (value) => {
+        return value !== undefined && value <= 0
+          ? 'Reps must be greater than 0'
+          : null;
+      },
+      setsCount: (value) => {
+        return value !== undefined && value <= 0
+          ? 'Sets must be greater than 0'
+          : null;
+      },
+      weight: (value) => {
+        return value !== undefined && value < 0
+          ? 'Weight cannot be negative'
+          : null;
       },
     },
   });
 
   const handleOpenExerciseModal = useCallback(
-    (exercise?: Exercise) => {
+    (exercise?: IGetExerciseDto) => {
       if (exercise) {
         setEditingExercise(exercise);
         exerciseForm.setValues({
-          name: exercise.name,
-          description: exercise.description,
-          categoryId: exercise.categoryId,
+          name: exercise.name || '',
+          description: exercise.description || '',
+          categoryId: exercise.category?.id || '',
         });
       } else {
         setEditingExercise(null);
@@ -300,10 +317,19 @@ export function ExercisesPage() {
         if (editingExercise) {
           // Update existing exercise (not implemented in this example)
           // Would use a putExercise hook here
-          const newExercise: Exercise = {
-            id: editingExercise.id,
-            ...values,
-            trackPoints: editingExercise.trackPoints,
+
+          // Note: This is a simplified implementation since we're not actually saving to the backend
+          // In a real implementation, you would use an API call to update the exercise
+
+          const selectedCategory = categories.find((cat) => {
+            return cat.id === values.categoryId;
+          });
+
+          const newExercise: IGetExerciseDto = {
+            ...editingExercise,
+            name: values.name,
+            description: values.description,
+            category: selectedCategory as GetExerciseCategoryDto,
           };
 
           setExercises(
@@ -326,15 +352,8 @@ export function ExercisesPage() {
           const response = await createExercise(values);
 
           if (response?.data) {
-            const newExercise: Exercise = {
-              id: response.data.id,
-              name: values.name,
-              description: values.description || '',
-              categoryId: values.categoryId,
-              trackPoints: [],
-            };
-
-            setExercises([...exercises, newExercise]);
+            // After successful creation, fetch all exercises to get the updated list
+            fetchExercises();
 
             notifications.show({
               title: 'Success',
@@ -367,11 +386,16 @@ export function ExercisesPage() {
       selectedExercise,
       closeExerciseModal,
       exerciseForm,
+      categories,
+      fetchExercises,
     ],
   );
 
   const handleDeleteExercise = useCallback(
     (id: string) => {
+      // Note: This is a simplified implementation since we're not actually saving to the backend
+      // In a real implementation, you would use an API call to delete the exercise
+
       setExercises(
         exercises.filter((ex) => {
           return ex.id !== id;
@@ -380,121 +404,216 @@ export function ExercisesPage() {
       if (selectedExercise && selectedExercise.id === id) {
         setSelectedExercise(null);
       }
+
+      // In a real implementation, you would refresh the data after the API call
+      // fetchExercises();
     },
     [exercises, selectedExercise],
   );
 
   const handleOpenTrackPointModal = useCallback(
-    (trackPoint?: ExerciseTrackPoint) => {
+    (trackPoint?: any) => {
       if (!selectedExercise) return;
 
       if (trackPoint) {
+        // Editing an existing track point
         setEditingTrackPoint(trackPoint);
-        trackPointForm.setValues({
-          date: trackPoint.date,
-          reps: trackPoint.reps,
-          sets: trackPoint.sets,
-          weight: trackPoint.weight,
+        updateTrackPointForm.setValues({
+          id: trackPoint.id,
+          date: new Date(trackPoint.date),
+          repsCount: trackPoint.repsCount,
+          setsCount: trackPoint.setsCount,
+          weight: trackPoint.weight || 0,
           description: trackPoint.description || '',
+          exerciseId: selectedExercise.id,
         });
       } else {
+        // Creating a new track point
         setEditingTrackPoint(null);
-        trackPointForm.reset();
+        createTrackPointForm.setValues({
+          date: new Date(),
+          repsCount: 0,
+          setsCount: 0,
+          weight: 0,
+          description: '',
+          exerciseId: selectedExercise.id,
+        });
       }
       openTrackPointModal();
     },
-    [selectedExercise, trackPointForm, openTrackPointModal],
+    [
+      selectedExercise,
+      createTrackPointForm,
+      updateTrackPointForm,
+      openTrackPointModal,
+    ],
   );
 
-  const handleSubmitTrackPoint = useCallback(
-    (values: TrackPointFormValues) => {
+  const handleCreateTrackPoint = useCallback(
+    async (values: ICreateExerciseTrackPointDto) => {
       if (!selectedExercise) return;
 
-      const newTrackPoint: ExerciseTrackPoint = {
-        id: editingTrackPoint ? editingTrackPoint.id : Date.now().toString(),
-        ...values,
-      };
+      setLoading(true);
+      setError(null);
 
-      const updatedExercise = { ...selectedExercise };
+      try {
+        // Call API to create a new track point
+        const response = await createTrackPoint(values);
 
-      if (editingTrackPoint) {
-        // Update existing track point
-        updatedExercise.trackPoints = updatedExercise.trackPoints.map((tp) => {
-          return tp.id === editingTrackPoint.id ? newTrackPoint : tp;
+        if (response?.data) {
+          // After successful creation, fetch the updated track points
+          fetchTrackPoints(selectedExercise.id!);
+
+          notifications.show({
+            title: 'Success',
+            message: 'Track point created successfully',
+            color: 'green',
+          });
+        }
+
+        // Reset form and close modal
+        createTrackPointForm.reset();
+        closeTrackPointModal();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to create track point';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
         });
-      } else {
-        // Add new track point
-        updatedExercise.trackPoints = [
-          ...updatedExercise.trackPoints,
-          newTrackPoint,
-        ];
+      } finally {
+        setLoading(false);
       }
-
-      setExercises(
-        exercises.map((ex) => {
-          return ex.id === selectedExercise.id ? updatedExercise : ex;
-        }),
-      );
-      setSelectedExercise(updatedExercise);
-
-      closeTrackPointModal();
     },
-    [selectedExercise, editingTrackPoint, exercises, closeTrackPointModal],
+    [
+      selectedExercise,
+      createTrackPoint,
+      fetchTrackPoints,
+      createTrackPointForm,
+      closeTrackPointModal,
+    ],
+  );
+
+  const handleUpdateTrackPoint = useCallback(
+    async (values: IUpdateExerciseTrackPointDto) => {
+      if (!selectedExercise) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Call API to update the track point
+        const response = await updateTrackPoint(values);
+
+        if (response?.data) {
+          // After successful update, fetch the updated track points
+          fetchTrackPoints(selectedExercise.id!);
+
+          notifications.show({
+            title: 'Success',
+            message: 'Track point updated successfully',
+            color: 'green',
+          });
+        }
+
+        // Reset form and close modal
+        updateTrackPointForm.reset();
+        closeTrackPointModal();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to update track point';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      selectedExercise,
+      updateTrackPoint,
+      fetchTrackPoints,
+      updateTrackPointForm,
+      closeTrackPointModal,
+    ],
   );
 
   const handleDeleteTrackPoint = useCallback(
-    (id: string) => {
+    async (id: string) => {
       if (!selectedExercise) return;
 
-      const updatedExercise = { ...selectedExercise };
-      updatedExercise.trackPoints = updatedExercise.trackPoints.filter((tp) => {
-        return tp.id !== id;
-      });
+      setLoading(true);
+      setError(null);
 
-      setExercises(
-        exercises.map((ex) => {
-          return ex.id === selectedExercise.id ? updatedExercise : ex;
-        }),
-      );
-      setSelectedExercise(updatedExercise);
+      try {
+        // Call API to delete the track point
+        const response = await deleteTrackPoint(id);
+
+        if (response) {
+          // After successful deletion, fetch the updated track points
+          fetchTrackPoints(selectedExercise.id!);
+
+          notifications.show({
+            title: 'Success',
+            message: 'Track point deleted successfully',
+            color: 'green',
+          });
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to delete track point';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
     },
-    [selectedExercise, exercises],
+    [selectedExercise, deleteTrackPoint, fetchTrackPoints],
   );
 
-  const getCategoryName = useCallback(
-    (categoryId: string) => {
-      const category = categories.find((cat) => {
-        return cat.id === categoryId;
-      });
-      return category ? category.name : 'Unknown';
-    },
-    [categories],
-  );
+  const getCategoryName = useCallback((category?: IGetExerciseCategoryDto) => {
+    return category?.name || 'Unknown';
+  }, []);
 
   // Prepare chart data for the selected exercise
   const prepareChartData = useCallback(() => {
-    if (!selectedExercise) return { repsData: [], weightData: [] };
+    if (trackPoints.length === 0) return { repsData: [], weightData: [] };
 
-    const sortedTrackPoints = [...selectedExercise.trackPoints].sort((a, b) => {
-      return a.date.getTime() - b.date.getTime();
+    const sortedTrackPoints = [...trackPoints].sort((a, b) => {
+      return new Date(a.date!).getTime() - new Date(b.date!).getTime();
     });
 
     const repsData = sortedTrackPoints.map((tp) => {
       return {
-        date: tp.date.toLocaleDateString(),
-        reps: tp.reps * tp.sets, // Total reps across all sets
+        date: new Date(tp.date!).toLocaleDateString(),
+        reps: tp.repsCount! * tp.setsCount!, // Total reps across all sets
       };
     });
 
     const weightData = sortedTrackPoints.map((tp) => {
       return {
-        date: tp.date.toLocaleDateString(),
+        date: new Date(tp.date!).toLocaleDateString(),
         weight: tp.weight,
       };
     });
 
     return { repsData, weightData };
-  }, [selectedExercise]);
+  }, [trackPoints]);
 
   const { repsData, weightData } = prepareChartData();
 
@@ -522,7 +641,7 @@ export function ExercisesPage() {
                 <div>
                   <Title order={3}>{exercise.name}</Title>
                   <Text size="sm" c="dimmed">
-                    Category: {getCategoryName(exercise.categoryId)}
+                    Category: {getCategoryName(exercise.category)}
                   </Text>
                 </div>
                 <Group>
@@ -541,7 +660,7 @@ export function ExercisesPage() {
                     color="red"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteExercise(exercise.id);
+                      handleDeleteExercise(exercise.id!);
                     }}
                   >
                     <IconTrash size="1rem" />
@@ -550,7 +669,7 @@ export function ExercisesPage() {
               </Group>
               <Text mt="xs">{exercise.description}</Text>
               <Text size="sm" mt="md">
-                <b>Track Points:</b> {exercise.trackPoints.length}
+                <b>Track Points:</b> {exercise.trackPoints?.length || 0}
               </Text>
             </Card>
           );
@@ -568,7 +687,7 @@ export function ExercisesPage() {
   return (
     <Container size="lg" py="xl">
       <Paper shadow="md" p="xl" radius="md" withBorder mb="xl" pos="relative">
-        <LoadingOverlay visible={loading} />
+        <LoadingOverlay visible={loading || exercisesLoading} />
         <Group justify="space-between" mb="xl">
           <Title order={1}>Exercises</Title>
           <Button
@@ -581,7 +700,11 @@ export function ExercisesPage() {
           </Button>
         </Group>
 
-        {exercises.length === 0 ? (
+        {exercisesLoading && exercises.length === 0 ? (
+          <Text c="dimmed" ta="center">
+            Loading exercises...
+          </Text>
+        ) : exercises.length === 0 ? (
           <Text c="dimmed" ta="center">
             No exercises added yet.
           </Text>
@@ -589,9 +712,9 @@ export function ExercisesPage() {
           exercisesList
         )}
 
-        {error && (
+        {(error || exercisesError) && (
           <Paper shadow="md" p="md" radius="md" withBorder mt="md" bg="red.1">
-            <Text c="red">{error}</Text>
+            <Text c="red">{error || exercisesError}</Text>
           </Paper>
         )}
       </Paper>
@@ -602,7 +725,7 @@ export function ExercisesPage() {
             <div>
               <Title order={2}>{selectedExercise.name}</Title>
               <Text size="sm">
-                Category: {getCategoryName(selectedExercise.categoryId)}
+                Category: {getCategoryName(selectedExercise.category)}
               </Text>
             </div>
             <Button
@@ -628,16 +751,36 @@ export function ExercisesPage() {
               </Tabs.Tab>
             </Tabs.List>
 
-            <Tabs.Panel value="trackPoints" pt="md">
-              {selectedExercise.trackPoints.length === 0 ? (
+            <Tabs.Panel value="trackPoints" pt="md" pos="relative">
+              <LoadingOverlay visible={trackPointsLoading} />
+
+              {/* Show error if there is one */}
+              {trackPointsError && (
+                <Paper
+                  shadow="md"
+                  p="md"
+                  radius="md"
+                  withBorder
+                  mb="md"
+                  bg="red.1"
+                >
+                  <Text c="red">{trackPointsError}</Text>
+                </Paper>
+              )}
+
+              {/* Check if there are any track points */}
+              {!trackPointsLoading && trackPoints.length === 0 ? (
                 <Text c="dimmed" ta="center">
                   No track points added yet.
                 </Text>
               ) : (
                 <Stack gap="md">
-                  {[...selectedExercise.trackPoints]
+                  {[...trackPoints]
                     .sort((a, b) => {
-                      return b.date.getTime() - a.date.getTime();
+                      return (
+                        new Date(b.date!).getTime() -
+                        new Date(a.date!).getTime()
+                      );
                     })
                     .map((trackPoint) => {
                       return (
@@ -649,7 +792,7 @@ export function ExercisesPage() {
                         >
                           <Group justify="space-between">
                             <Text fw={500}>
-                              {trackPoint.date.toLocaleDateString()}
+                              {new Date(trackPoint.date!).toLocaleDateString()}
                             </Text>
                             <Group>
                               <ActionIcon
@@ -665,7 +808,7 @@ export function ExercisesPage() {
                                 variant="subtle"
                                 color="red"
                                 onClick={() => {
-                                  return handleDeleteTrackPoint(trackPoint.id);
+                                  return handleDeleteTrackPoint(trackPoint.id!);
                                 }}
                               >
                                 <IconTrash size="1rem" />
@@ -675,10 +818,10 @@ export function ExercisesPage() {
 
                           <Group mt="md">
                             <Text size="sm">
-                              <b>Sets:</b> {trackPoint.sets}
+                              <b>Sets:</b> {trackPoint.setsCount}
                             </Text>
                             <Text size="sm">
-                              <b>Reps:</b> {trackPoint.reps}
+                              <b>Reps:</b> {trackPoint.repsCount}
                             </Text>
                             <Text size="sm">
                               <b>Weight:</b> {trackPoint.weight} kg
@@ -797,10 +940,10 @@ export function ExercisesPage() {
               label="Category"
               placeholder="Select category"
               data={categories.map((cat) => {
-                return { value: cat.id, label: cat.name };
+                return { value: cat.id!, label: cat.name! };
               })}
               required
-              loading={categoriesLoading}
+              //loading={categoriesLoading}
               key={exerciseForm.key('categoryId')}
               {...exerciseForm.getInputProps('categoryId')}
             />
@@ -824,66 +967,129 @@ export function ExercisesPage() {
       </Drawer>
 
       {/* Track Point Modal */}
-      <Modal
+      <Drawer
         opened={trackPointModalOpened}
         onClose={closeTrackPointModal}
         title={editingTrackPoint ? 'Edit Track Point' : 'Add New Track Point'}
-        centered
       >
-        <form onSubmit={trackPointForm.onSubmit(handleSubmitTrackPoint)}>
-          <Stack>
-            <DatePickerInput
-              label="Date"
-              placeholder="Select date"
-              required
-              {...trackPointForm.getInputProps('date')}
-            />
-
-            <Group grow>
-              <NumberInput
-                label="Sets"
-                placeholder="Number of sets"
-                min={1}
+        {editingTrackPoint ? (
+          <form
+            onSubmit={updateTrackPointForm.onSubmit(handleUpdateTrackPoint)}
+          >
+            <Stack>
+              <DatePickerInput
+                label="Date"
+                placeholder="Select date"
                 required
-                {...trackPointForm.getInputProps('sets')}
+                key={updateTrackPointForm.key('date')}
+                {...updateTrackPointForm.getInputProps('date')}
               />
 
+              <Group grow>
+                <NumberInput
+                  label="Sets"
+                  placeholder="Number of sets"
+                  min={1}
+                  required
+                  key={updateTrackPointForm.key('setsCount')}
+                  {...updateTrackPointForm.getInputProps('setsCount')}
+                />
+
+                <NumberInput
+                  label="Reps"
+                  placeholder="Reps per set"
+                  min={1}
+                  required
+                  key={updateTrackPointForm.key('repsCount')}
+                  {...updateTrackPointForm.getInputProps('repsCount')}
+                />
+              </Group>
+
               <NumberInput
-                label="Reps"
-                placeholder="Reps per set"
-                min={1}
+                label="Weight (kg)"
+                placeholder="Weight used"
+                min={0}
+                step={0.5}
                 required
-                {...trackPointForm.getInputProps('reps')}
+                key={updateTrackPointForm.key('weight')}
+                {...updateTrackPointForm.getInputProps('weight')}
               />
-            </Group>
 
-            <NumberInput
-              label="Weight (kg)"
-              placeholder="Weight used"
-              //precision={1}
-              min={0}
-              step={0.5}
-              required
-              {...trackPointForm.getInputProps('weight')}
-            />
+              <Textarea
+                label="Notes"
+                placeholder="Optional notes"
+                key={updateTrackPointForm.key('description')}
+                {...updateTrackPointForm.getInputProps('description')}
+              />
 
-            <Textarea
-              label="Notes"
-              placeholder="Optional notes"
-              {...trackPointForm.getInputProps('description')}
-            />
+              <Group justify="flex-end" mt="md">
+                <Button variant="subtle" onClick={closeTrackPointModal}>
+                  Cancel
+                </Button>
+                <Button type="submit">Update</Button>
+              </Group>
+            </Stack>
+          </form>
+        ) : (
+          <form
+            onSubmit={createTrackPointForm.onSubmit(handleCreateTrackPoint)}
+          >
+            <Stack>
+              <DatePickerInput
+                label="Date"
+                placeholder="Select date"
+                required
+                key={createTrackPointForm.key('date')}
+                {...createTrackPointForm.getInputProps('date')}
+              />
 
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={closeTrackPointModal}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {editingTrackPoint ? 'Update' : 'Add'}
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+              <Group grow>
+                <NumberInput
+                  label="Sets"
+                  placeholder="Number of sets"
+                  min={1}
+                  required
+                  key={createTrackPointForm.key('setsCount')}
+                  {...createTrackPointForm.getInputProps('setsCount')}
+                />
+
+                <NumberInput
+                  label="Reps"
+                  placeholder="Reps per set"
+                  min={1}
+                  required
+                  key={createTrackPointForm.key('repsCount')}
+                  {...createTrackPointForm.getInputProps('repsCount')}
+                />
+              </Group>
+
+              <NumberInput
+                label="Weight (kg)"
+                placeholder="Weight used"
+                min={0}
+                step={0.5}
+                required
+                key={createTrackPointForm.key('weight')}
+                {...createTrackPointForm.getInputProps('weight')}
+              />
+
+              <Textarea
+                label="Notes"
+                placeholder="Optional notes"
+                key={createTrackPointForm.key('description')}
+                {...createTrackPointForm.getInputProps('description')}
+              />
+
+              <Group justify="flex-end" mt="md">
+                <Button variant="subtle" onClick={closeTrackPointModal}>
+                  Cancel
+                </Button>
+                <Button type="submit">Add</Button>
+              </Group>
+            </Stack>
+          </form>
+        )}
+      </Drawer>
     </Container>
   );
 }
