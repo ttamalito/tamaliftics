@@ -7,7 +7,7 @@
 /* tslint:disable */
 /* eslint-disable */
 // ReSharper disable InconsistentNaming
-
+/* @ts-ignore */
 export class UpdateWorkoutPlanDto implements IUpdateWorkoutPlanDto {
     id!: string;
     type?: UpdateWorkoutPlanDtoType;

@@ -20,7 +20,10 @@ function App() {
         <Route path={ROOT_ROUTES.HOME} element={<HomePage />} />
         <Route path={ROOT_ROUTES.DIET} element={<DietPage />} />
         <Route path={ROOT_ROUTES.WEIGHT} element={<WeightPage />} />
-        <Route path={ROOT_ROUTES.EXERCISE_CATEGORIES} element={<ExerciseCategoriesPage />} />
+        <Route
+          path={ROOT_ROUTES.EXERCISE_CATEGORIES}
+          element={<ExerciseCategoriesPage />}
+        />
         <Route path={ROOT_ROUTES.EXERCISES} element={<ExercisesPage />} />
         <Route path={ROOT_ROUTES.WORKOUT_PLAN} element={<WorkoutPlanPage />} />
       </Route>

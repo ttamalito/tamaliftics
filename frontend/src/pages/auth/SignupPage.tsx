@@ -16,7 +16,7 @@ import {
   Stack,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconAt, IconLock, IconUser, IconMail } from '@tabler/icons-react';
+import { IconLock, IconUser, IconMail } from '@tabler/icons-react';
 
 interface SignupFormValues {
   username: string;
@@ -41,11 +41,20 @@ export function SignupPage() {
       lastName: '',
     },
     validate: {
-      username: (value) => (value.trim().length === 0 ? 'Username is required' : null),
-      email: (value) => (/^\S+@\S+$/.test(value) ? null : 'Invalid email'),
-      password: (value) => (value.length < 6 ? 'Password must be at least 6 characters' : null),
-      confirmPassword: (value, values) =>
-        value !== values.password ? 'Passwords do not match' : null,
+      username: (value) => {
+        return value.trim().length === 0 ? 'Username is required' : null;
+      },
+      email: (value) => {
+        return /^\S+@\S+$/.test(value) ? null : 'Invalid email';
+      },
+      password: (value) => {
+        return value.length < 6
+          ? 'Password must be at least 6 characters'
+          : null;
+      },
+      confirmPassword: (value, values) => {
+        return value !== values.password ? 'Passwords do not match' : null;
+      },
     },
   });
 
@@ -57,10 +66,10 @@ export function SignupPage() {
         values.password,
         values.email,
         values.firstName || undefined,
-        values.lastName || undefined
+        values.lastName || undefined,
       );
     } catch (error) {
-      setError('Username or email already exists');
+      setError('Username or email already exists' + error);
     }
   };
 

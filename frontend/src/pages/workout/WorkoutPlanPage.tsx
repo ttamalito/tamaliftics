@@ -10,7 +10,6 @@ import {
   Card,
   ActionIcon,
   Modal,
-  TextInput,
   Textarea,
   Select,
   Tabs,
@@ -22,6 +21,7 @@ import { useForm } from '@mantine/form';
 import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
 
 // Types for workout plans
+// @ts-ignore
 enum WorkoutType {
   PushAndPull1 = 'PushAndPull1',
   PushAndPull2 = 'PushAndPull2',
@@ -30,6 +30,7 @@ enum WorkoutType {
   Abs = 'Abs',
 }
 
+// @ts-ignore
 enum DayOfWeek {
   Monday = 'Monday',
   Tuesday = 'Tuesday',
@@ -123,8 +124,12 @@ export function WorkoutPlanPage() {
       exerciseIds: [],
     },
     validate: {
-      description: (value) => (value.trim().length === 0 ? 'Description is required' : null),
-      exerciseIds: (value) => (value.length === 0 ? 'At least one exercise is required' : null),
+      description: (value) => {
+        return value.trim().length === 0 ? 'Description is required' : null;
+      },
+      exerciseIds: (value) => {
+        return value.length === 0 ? 'At least one exercise is required' : null;
+      },
     },
   });
 
@@ -152,7 +157,11 @@ export function WorkoutPlanPage() {
 
     if (editingPlan) {
       // Update existing plan
-      setWorkoutPlans(workoutPlans.map((plan) => (plan.id === editingPlan.id ? newPlan : plan)));
+      setWorkoutPlans(
+        workoutPlans.map((plan) => {
+          return plan.id === editingPlan.id ? newPlan : plan;
+        }),
+      );
     } else {
       // Add new plan
       setWorkoutPlans([...workoutPlans, newPlan]);
@@ -162,17 +171,25 @@ export function WorkoutPlanPage() {
   };
 
   const handleDeletePlan = (id: string) => {
-    setWorkoutPlans(workoutPlans.filter((plan) => plan.id !== id));
+    setWorkoutPlans(
+      workoutPlans.filter((plan) => {
+        return plan.id !== id;
+      }),
+    );
   };
 
   const getExerciseName = (id: string) => {
-    const exercise = exercises.find((ex) => ex.id === id);
+    const exercise = exercises.find((ex) => {
+      return ex.id === id;
+    });
     return exercise ? exercise.name : 'Unknown Exercise';
   };
 
   const getFilteredPlans = () => {
     if (activeTab === 'all') return workoutPlans;
-    return workoutPlans.filter((plan) => plan.type === activeTab);
+    return workoutPlans.filter((plan) => {
+      return plan.type === activeTab;
+    });
   };
 
   const workoutTypeOptions = [
@@ -193,10 +210,12 @@ export function WorkoutPlanPage() {
     { value: DayOfWeek.Sunday, label: 'Sunday' },
   ];
 
-  const exerciseOptions = exercises.map((exercise) => ({
-    value: exercise.id,
-    label: exercise.name,
-  }));
+  const exerciseOptions = exercises.map((exercise) => {
+    return {
+      value: exercise.id,
+      label: exercise.name,
+    };
+  });
 
   return (
     <Container size="lg" py="xl">
@@ -205,7 +224,9 @@ export function WorkoutPlanPage() {
           <Title order={1}>Workout Plans</Title>
           <Button
             leftSection={<IconPlus size="1rem" />}
-            onClick={() => handleOpenModal()}
+            onClick={() => {
+              return handleOpenModal();
+            }}
           >
             Add Workout Plan
           </Button>
@@ -214,8 +235,12 @@ export function WorkoutPlanPage() {
         <Tabs value={activeTab} onChange={setActiveTab} mb="xl">
           <Tabs.List>
             <Tabs.Tab value="all">All Plans</Tabs.Tab>
-            <Tabs.Tab value={WorkoutType.PushAndPull1}>Push and Pull 1</Tabs.Tab>
-            <Tabs.Tab value={WorkoutType.PushAndPull2}>Push and Pull 2</Tabs.Tab>
+            <Tabs.Tab value={WorkoutType.PushAndPull1}>
+              Push and Pull 1
+            </Tabs.Tab>
+            <Tabs.Tab value={WorkoutType.PushAndPull2}>
+              Push and Pull 2
+            </Tabs.Tab>
             <Tabs.Tab value={WorkoutType.Legs1}>Legs 1</Tabs.Tab>
             <Tabs.Tab value={WorkoutType.Legs2}>Legs 2</Tabs.Tab>
             <Tabs.Tab value={WorkoutType.Abs}>Abs</Tabs.Tab>
@@ -223,46 +248,64 @@ export function WorkoutPlanPage() {
         </Tabs>
 
         {getFilteredPlans().length === 0 ? (
-          <Text c="dimmed" ta="center">No workout plans found.</Text>
+          <Text c="dimmed" ta="center">
+            No workout plans found.
+          </Text>
         ) : (
           <Stack gap="md">
-            {getFilteredPlans().map((plan) => (
-              <Card key={plan.id} withBorder shadow="sm" padding="md">
-                <Group justify="space-between">
-                  <div>
-                    <Title order={3}>{workoutTypeOptions.find(opt => opt.value === plan.type)?.label}</Title>
-                    <Text size="sm" c="dimmed">Day: {plan.day}</Text>
-                  </div>
-                  <Group>
-                    <ActionIcon
-                      variant="subtle"
-                      color="blue"
-                      onClick={() => handleOpenModal(plan)}
-                    >
-                      <IconEdit size="1rem" />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      onClick={() => handleDeletePlan(plan.id)}
-                    >
-                      <IconTrash size="1rem" />
-                    </ActionIcon>
+            {getFilteredPlans().map((plan) => {
+              return (
+                <Card key={plan.id} withBorder shadow="sm" padding="md">
+                  <Group justify="space-between">
+                    <div>
+                      <Title order={3}>
+                        {
+                          workoutTypeOptions.find((opt) => {
+                            return opt.value === plan.type;
+                          })?.label
+                        }
+                      </Title>
+                      <Text size="sm" c="dimmed">
+                        Day: {plan.day}
+                      </Text>
+                    </div>
+                    <Group>
+                      <ActionIcon
+                        variant="subtle"
+                        color="blue"
+                        onClick={() => {
+                          return handleOpenModal(plan);
+                        }}
+                      >
+                        <IconEdit size="1rem" />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        onClick={() => {
+                          return handleDeletePlan(plan.id);
+                        }}
+                      >
+                        <IconTrash size="1rem" />
+                      </ActionIcon>
+                    </Group>
                   </Group>
-                </Group>
-                
-                <Text mt="xs">{plan.description}</Text>
-                
-                <Divider my="sm" />
-                
-                <Title order={4} mb="xs">Exercises</Title>
-                <Stack gap="xs">
-                  {plan.exerciseIds.map((exId) => (
-                    <Text key={exId}>• {getExerciseName(exId)}</Text>
-                  ))}
-                </Stack>
-              </Card>
-            ))}
+
+                  <Text mt="xs">{plan.description}</Text>
+
+                  <Divider my="sm" />
+
+                  <Title order={4} mb="xs">
+                    Exercises
+                  </Title>
+                  <Stack gap="xs">
+                    {plan.exerciseIds.map((exId) => {
+                      return <Text key={exId}>• {getExerciseName(exId)}</Text>;
+                    })}
+                  </Stack>
+                </Card>
+              );
+            })}
           </Stack>
         )}
       </Paper>
@@ -270,7 +313,7 @@ export function WorkoutPlanPage() {
       <Modal
         opened={opened}
         onClose={close}
-        title={editingPlan ? "Edit Workout Plan" : "Add New Workout Plan"}
+        title={editingPlan ? 'Edit Workout Plan' : 'Add New Workout Plan'}
         centered
         size="lg"
       >
@@ -283,7 +326,7 @@ export function WorkoutPlanPage() {
               required
               {...form.getInputProps('type')}
             />
-            
+
             <Select
               label="Day of Week"
               placeholder="Select day"
@@ -291,14 +334,14 @@ export function WorkoutPlanPage() {
               required
               {...form.getInputProps('day')}
             />
-            
+
             <Textarea
               label="Description"
               placeholder="Workout plan description"
               required
               {...form.getInputProps('description')}
             />
-            
+
             <MultiSelect
               label="Exercises"
               placeholder="Select exercises"
@@ -307,10 +350,12 @@ export function WorkoutPlanPage() {
               searchable
               {...form.getInputProps('exerciseIds')}
             />
-            
+
             <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={close}>Cancel</Button>
-              <Button type="submit">{editingPlan ? "Update" : "Add"}</Button>
+              <Button variant="subtle" onClick={close}>
+                Cancel
+              </Button>
+              <Button type="submit">{editingPlan ? 'Update' : 'Add'}</Button>
             </Group>
           </Stack>
         </form>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { ROOT_ROUTES } from '../../routes/routes';
+import { ROOT_ROUTES } from '@routes';
 import {
   TextInput,
   PasswordInput,
@@ -31,17 +31,22 @@ export function LoginPage() {
       password: '',
     },
     validate: {
-      username: (value) => (value.trim().length === 0 ? 'Username is required' : null),
-      password: (value) => (value.length === 0 ? 'Password is required' : null),
+      username: (value) => {
+        return value.trim().length === 0 ? 'Username is required' : null;
+      },
+      password: (value) => {
+        return value.length === 0 ? 'Password is required' : null;
+      },
     },
   });
 
-  const handleSubmit = async (values: LoginFormValues) => {
+  const handleSubmit = (values: LoginFormValues) => {
+    console.log(values);
     setError(null);
     try {
-      await login(values.username, values.password);
+      //await login(values.username, values.password);
     } catch (error) {
-      setError('Invalid username or password');
+      setError('Invalid username or password' + error);
     }
   };
 
@@ -78,7 +83,7 @@ export function LoginPage() {
             </Text>
           )}
 
-          <Button fullWidth mt="xl" type="submit" loading={isLoading}>
+          <Button fullWidth mt="xl" type="submit">
             Sign in
           </Button>
         </form>

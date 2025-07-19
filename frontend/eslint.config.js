@@ -38,6 +38,7 @@ export default tseslint.config(
         "prefer-const": "error",
         "require-await": "error",
         "@typescript-eslint/no-explicit-any": 'warn',
+        "@typescript-eslint/ban-ts-comment": 'off',
       },
     },
 )

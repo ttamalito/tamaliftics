@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router';
-import { useAuth } from '../../hooks/useAuth';
-import { ROOT_ROUTES } from '../../routes/routes';
+import { useAuth } from '@hooks/useAuth.ts';
+import { ROOT_ROUTES } from '@routes';
 import {
   AppShell,
   Burger,
@@ -9,7 +8,6 @@ import {
   NavLink,
   Button,
   Title,
-  Text,
   Avatar,
   Menu,
   rem,
@@ -34,10 +32,26 @@ export function AppLayout() {
   const navItems = [
     { label: 'Home', icon: <IconHome size="1rem" />, to: ROOT_ROUTES.HOME },
     { label: 'Diet', icon: <IconSalad size="1rem" />, to: ROOT_ROUTES.DIET },
-    { label: 'Weight Tracking', icon: <IconWeight size="1rem" />, to: ROOT_ROUTES.WEIGHT },
-    { label: 'Exercise Categories', icon: <IconCategory size="1rem" />, to: ROOT_ROUTES.EXERCISE_CATEGORIES },
-    { label: 'Exercises', icon: <IconBarbell size="1rem" />, to: ROOT_ROUTES.EXERCISES },
-    { label: 'Workout Plan', icon: <IconCalendarStats size="1rem" />, to: ROOT_ROUTES.WORKOUT_PLAN },
+    {
+      label: 'Weight Tracking',
+      icon: <IconWeight size="1rem" />,
+      to: ROOT_ROUTES.WEIGHT,
+    },
+    {
+      label: 'Exercise Categories',
+      icon: <IconCategory size="1rem" />,
+      to: ROOT_ROUTES.EXERCISE_CATEGORIES,
+    },
+    {
+      label: 'Exercises',
+      icon: <IconBarbell size="1rem" />,
+      to: ROOT_ROUTES.EXERCISES,
+    },
+    {
+      label: 'Workout Plan',
+      icon: <IconCalendarStats size="1rem" />,
+      to: ROOT_ROUTES.WORKOUT_PLAN,
+    },
   ];
 
   return (
@@ -53,10 +67,15 @@ export function AppLayout() {
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              hiddenFrom="sm"
+              size="sm"
+            />
             <Title order={3}>Tamaliftics</Title>
           </Group>
-          
+
           {isAuthenticated ? (
             <Menu position="bottom-end" withArrow>
               <Menu.Target>
@@ -87,16 +106,18 @@ export function AppLayout() {
       </AppShell.Header>
 
       <AppShell.Navbar p="md">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            label={item.label}
-            leftSection={item.icon}
-            component={Link}
-            to={item.to}
-            active={location.pathname === item.to}
-          />
-        ))}
+        {navItems.map((item) => {
+          return (
+            <NavLink
+              key={item.to}
+              label={item.label}
+              leftSection={item.icon}
+              component={Link}
+              to={item.to}
+              active={location.pathname === item.to}
+            />
+          );
+        })}
       </AppShell.Navbar>
 
       <AppShell.Main>

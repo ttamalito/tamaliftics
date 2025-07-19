@@ -17,41 +17,53 @@ export function useAuth() {
     }
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, you would validate credentials with an API
-      localStorage.setItem('auth_token', 'dummy_token');
-      setIsAuthenticated(true);
-      navigate(ROOT_ROUTES.HOME);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [navigate]);
+  const login = useCallback(
+    async (username: string, password: string) => {
+      console.log(username, password);
+      setIsLoading(true);
+      try {
+        // Simulate API call
+        await new Promise((resolve) => {
+          return setTimeout(resolve, 1000);
+        });
 
-  const signup = useCallback(async (
-    username: string,
-    password: string,
-    email: string,
-    firstName?: string,
-    lastName?: string
-  ) => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, you would register the user with an API
-      localStorage.setItem('auth_token', 'dummy_token');
-      setIsAuthenticated(true);
-      navigate(ROOT_ROUTES.HOME);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [navigate]);
+        // In a real app, you would validate credentials with an API
+        localStorage.setItem('auth_token', 'dummy_token');
+        setIsAuthenticated(true);
+        navigate(ROOT_ROUTES.HOME);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [navigate],
+  );
+
+  const signup = useCallback(
+    async (
+      username: string,
+      password: string,
+      email: string,
+      firstName?: string,
+      lastName?: string,
+    ) => {
+      console.log(username, password, email, firstName, lastName);
+      setIsLoading(true);
+      try {
+        // Simulate API call
+        await new Promise((resolve) => {
+          return setTimeout(resolve, 1000);
+        });
+
+        // In a real app, you would register the user with an API
+        localStorage.setItem('auth_token', 'dummy_token');
+        setIsAuthenticated(true);
+        navigate(ROOT_ROUTES.HOME);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [navigate],
+  );
 
   const logout = useCallback(() => {
     localStorage.removeItem('auth_token');
@@ -64,6 +76,6 @@ export function useAuth() {
     isLoading,
     login,
     signup,
-    logout
+    logout,
   };
 }

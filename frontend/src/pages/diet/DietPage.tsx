@@ -64,8 +64,9 @@ export function DietPage() {
 
   const [activeTab, setActiveTab] = useState<string | null>('breakfast');
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
-  const [currentDietItem, setCurrentDietItem] = useState<keyof Diet>('breakfast');
-  
+  const [currentDietItem, setCurrentDietItem] =
+    useState<keyof Diet>('breakfast');
+
   const [opened, { open, close }] = useDisclosure(false);
 
   const form = useForm<DishFormValues>({
@@ -78,11 +79,21 @@ export function DietPage() {
       protein: 0,
     },
     validate: {
-      name: (value) => (value.trim().length === 0 ? 'Name is required' : null),
-      calories: (value) => (value < 0 ? 'Calories cannot be negative' : null),
-      carbs: (value) => (value < 0 ? 'Carbs cannot be negative' : null),
-      fat: (value) => (value < 0 ? 'Fat cannot be negative' : null),
-      protein: (value) => (value < 0 ? 'Protein cannot be negative' : null),
+      name: (value) => {
+        return value.trim().length === 0 ? 'Name is required' : null;
+      },
+      calories: (value) => {
+        return value < 0 ? 'Calories cannot be negative' : null;
+      },
+      carbs: (value) => {
+        return value < 0 ? 'Carbs cannot be negative' : null;
+      },
+      fat: (value) => {
+        return value < 0 ? 'Fat cannot be negative' : null;
+      },
+      protein: (value) => {
+        return value < 0 ? 'Protein cannot be negative' : null;
+      },
     },
   });
 
@@ -113,31 +124,33 @@ export function DietPage() {
 
     setDiet((prevDiet) => {
       const updatedDietItem = { ...prevDiet[currentDietItem] };
-      
+
       if (editingDish) {
         // Update existing dish
-        updatedDietItem.dishes = updatedDietItem.dishes.map((dish) =>
-          dish.id === editingDish.id ? newDish : dish
-        );
+        updatedDietItem.dishes = updatedDietItem.dishes.map((dish) => {
+          return dish.id === editingDish.id ? newDish : dish;
+        });
       } else {
         // Add new dish
         updatedDietItem.dishes = [...updatedDietItem.dishes, newDish];
       }
-      
+
       return {
         ...prevDiet,
         [currentDietItem]: updatedDietItem,
       };
     });
-    
+
     close();
   };
 
   const handleDeleteDish = (dietItem: keyof Diet, dishId: string) => {
     setDiet((prevDiet) => {
       const updatedDietItem = { ...prevDiet[dietItem] };
-      updatedDietItem.dishes = updatedDietItem.dishes.filter((dish) => dish.id !== dishId);
-      
+      updatedDietItem.dishes = updatedDietItem.dishes.filter((dish) => {
+        return dish.id !== dishId;
+      });
+
       return {
         ...prevDiet,
         [dietItem]: updatedDietItem,
@@ -152,7 +165,9 @@ export function DietPage() {
           <Title order={3}>{dietItem.name}</Title>
           <Button
             leftSection={<IconPlus size="1rem" />}
-            onClick={() => handleOpenModal(key)}
+            onClick={() => {
+              return handleOpenModal(key);
+            }}
           >
             Add Dish
           </Button>
@@ -162,38 +177,54 @@ export function DietPage() {
           <Text c="dimmed">No dishes added yet.</Text>
         ) : (
           <Stack gap="md">
-            {dietItem.dishes.map((dish) => (
-              <Card key={dish.id} withBorder shadow="sm" padding="md">
-                <Group justify="space-between">
-                  <Title order={4}>{dish.name}</Title>
-                  <Group>
-                    <ActionIcon
-                      variant="subtle"
-                      color="blue"
-                      onClick={() => handleOpenModal(key, dish)}
-                    >
-                      <IconEdit size="1rem" />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      onClick={() => handleDeleteDish(key, dish.id)}
-                    >
-                      <IconTrash size="1rem" />
-                    </ActionIcon>
+            {dietItem.dishes.map((dish) => {
+              return (
+                <Card key={dish.id} withBorder shadow="sm" padding="md">
+                  <Group justify="space-between">
+                    <Title order={4}>{dish.name}</Title>
+                    <Group>
+                      <ActionIcon
+                        variant="subtle"
+                        color="blue"
+                        onClick={() => {
+                          return handleOpenModal(key, dish);
+                        }}
+                      >
+                        <IconEdit size="1rem" />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        onClick={() => {
+                          return handleDeleteDish(key, dish.id);
+                        }}
+                      >
+                        <IconTrash size="1rem" />
+                      </ActionIcon>
+                    </Group>
                   </Group>
-                </Group>
-                
-                <Text size="sm" mt="xs">{dish.description}</Text>
-                
-                <Group mt="md">
-                  <Text size="sm"><b>Calories:</b> {dish.calories}</Text>
-                  <Text size="sm"><b>Carbs:</b> {dish.carbs}g</Text>
-                  <Text size="sm"><b>Fat:</b> {dish.fat}g</Text>
-                  <Text size="sm"><b>Protein:</b> {dish.protein}g</Text>
-                </Group>
-              </Card>
-            ))}
+
+                  <Text size="sm" mt="xs">
+                    {dish.description}
+                  </Text>
+
+                  <Group mt="md">
+                    <Text size="sm">
+                      <b>Calories:</b> {dish.calories}
+                    </Text>
+                    <Text size="sm">
+                      <b>Carbs:</b> {dish.carbs}g
+                    </Text>
+                    <Text size="sm">
+                      <b>Fat:</b> {dish.fat}g
+                    </Text>
+                    <Text size="sm">
+                      <b>Protein:</b> {dish.protein}g
+                    </Text>
+                  </Group>
+                </Card>
+              );
+            })}
           </Stack>
         )}
       </Stack>
@@ -203,8 +234,10 @@ export function DietPage() {
   return (
     <Container size="lg" py="xl">
       <Paper shadow="md" p="xl" radius="md" withBorder>
-        <Title order={1} mb="xl">Diet Management</Title>
-        
+        <Title order={1} mb="xl">
+          Diet Management
+        </Title>
+
         <Tabs value={activeTab} onChange={setActiveTab}>
           <Tabs.List>
             <Tabs.Tab value="breakfast">Breakfast</Tabs.Tab>
@@ -216,15 +249,15 @@ export function DietPage() {
           <Tabs.Panel value="breakfast" pt="md">
             {renderDietItem(diet.breakfast, 'breakfast')}
           </Tabs.Panel>
-          
+
           <Tabs.Panel value="lunch" pt="md">
             {renderDietItem(diet.lunch, 'lunch')}
           </Tabs.Panel>
-          
+
           <Tabs.Panel value="dinner" pt="md">
             {renderDietItem(diet.dinner, 'dinner')}
           </Tabs.Panel>
-          
+
           <Tabs.Panel value="snacks" pt="md">
             {renderDietItem(diet.snacks, 'snacks')}
           </Tabs.Panel>
@@ -234,7 +267,7 @@ export function DietPage() {
       <Modal
         opened={opened}
         onClose={close}
-        title={editingDish ? "Edit Dish" : "Add New Dish"}
+        title={editingDish ? 'Edit Dish' : 'Add New Dish'}
         centered
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
@@ -245,13 +278,13 @@ export function DietPage() {
               required
               {...form.getInputProps('name')}
             />
-            
+
             <Textarea
               label="Description"
               placeholder="Dish description"
               {...form.getInputProps('description')}
             />
-            
+
             <NumberInput
               label="Calories"
               placeholder="Calories"
@@ -259,7 +292,7 @@ export function DietPage() {
               required
               {...form.getInputProps('calories')}
             />
-            
+
             <Group grow>
               <NumberInput
                 label="Carbs (g)"
@@ -268,7 +301,7 @@ export function DietPage() {
                 required
                 {...form.getInputProps('carbs')}
               />
-              
+
               <NumberInput
                 label="Fat (g)"
                 placeholder="Fat"
@@ -276,7 +309,7 @@ export function DietPage() {
                 required
                 {...form.getInputProps('fat')}
               />
-              
+
               <NumberInput
                 label="Protein (g)"
                 placeholder="Protein"
@@ -285,10 +318,12 @@ export function DietPage() {
                 {...form.getInputProps('protein')}
               />
             </Group>
-            
+
             <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={close}>Cancel</Button>
-              <Button type="submit">{editingDish ? "Update" : "Add"}</Button>
+              <Button variant="subtle" onClick={close}>
+                Cancel
+              </Button>
+              <Button type="submit">{editingDish ? 'Update' : 'Add'}</Button>
             </Group>
           </Stack>
         </form>
