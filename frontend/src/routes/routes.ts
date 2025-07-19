@@ -1,4 +1,4 @@
-export const ROOT_ROUTES = {
+export const routes = {
   HOME: '/',
   LOGIN: '/login',
   SIGNUP: '/signup',
@@ -10,9 +10,9 @@ export const ROOT_ROUTES = {
 };
 
 export const PROTECTED_ROUTES = [
-  ROOT_ROUTES.DIET,
-  ROOT_ROUTES.WEIGHT,
-  ROOT_ROUTES.EXERCISE_CATEGORIES,
-  ROOT_ROUTES.EXERCISES,
-  ROOT_ROUTES.WORKOUT_PLAN,
+  routes.DIET,
+  routes.WEIGHT,
+  routes.EXERCISE_CATEGORIES,
+  routes.EXERCISES,
+  routes.WORKOUT_PLAN,
 ];

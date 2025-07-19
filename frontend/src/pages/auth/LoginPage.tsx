@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { ROOT_ROUTES } from '@routes';
+import { routes } from '@routes';
 import {
   TextInput,
   PasswordInput,
@@ -93,7 +93,7 @@ export function LoginPage() {
         <Group justify="center" mt="md">
           <Text size="sm">
             Don't have an account?{' '}
-            <Anchor component={Link} to={ROOT_ROUTES.SIGNUP} fw={700}>
+            <Anchor component={Link} to={routes.SIGNUP} fw={700}>
               Sign up
             </Anchor>
           </Text>

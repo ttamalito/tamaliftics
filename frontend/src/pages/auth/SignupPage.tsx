@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+//import { useAuth } from '../../hooks/useAuth';
 import { Link } from 'react-router';
-import { ROOT_ROUTES } from '../../routes/routes';
+import { routes } from '@routes';
 import {
   TextInput,
   PasswordInput,
@@ -28,7 +28,6 @@ interface SignupFormValues {
 }
 
 export function SignupPage() {
-  const { signup, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<SignupFormValues>({
@@ -58,16 +57,10 @@ export function SignupPage() {
     },
   });
 
-  const handleSubmit = async (values: SignupFormValues) => {
+  const handleSubmit = (values: SignupFormValues) => {
     setError(null);
     try {
-      await signup(
-        values.username,
-        values.password,
-        values.email,
-        values.firstName || undefined,
-        values.lastName || undefined,
-      );
+      console.log(values);
     } catch (error) {
       setError('Username or email already exists' + error);
     }
@@ -136,7 +129,7 @@ export function SignupPage() {
             </Text>
           )}
 
-          <Button fullWidth mt="xl" type="submit" loading={isLoading}>
+          <Button fullWidth mt="xl" type="submit">
             Sign up
           </Button>
         </form>
@@ -146,7 +139,7 @@ export function SignupPage() {
         <Group justify="center" mt="md">
           <Text size="sm">
             Already have an account?{' '}
-            <Anchor component={Link} to={ROOT_ROUTES.LOGIN} fw={700}>
+            <Anchor component={Link} to={routes.LOGIN} fw={700}>
               Sign in
             </Anchor>
           </Text>

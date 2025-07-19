@@ -8,12 +8,10 @@ import {
   Paper,
 } from '@mantine/core';
 import { Link } from 'react-router';
-import { ROOT_ROUTES } from '@routes';
-import { useAuth } from '@hooks/useAuth.ts';
+import { routes } from '@routes';
+//import { useAuth } from '@hooks/useAuth.ts';
 
 export function HomePage() {
-  const { isAuthenticated } = useAuth();
-
   return (
     <Container size="lg" py="xl">
       <Paper shadow="md" p="xl" radius="md" withBorder>
@@ -27,59 +25,51 @@ export function HomePage() {
             health and fitness goals.
           </Text>
 
-          {!isAuthenticated && (
+          {
             <Group justify="center" gap="md">
               <Button
                 component={Link}
-                to={ROOT_ROUTES.LOGIN}
+                to={routes.LOGIN}
                 size="lg"
                 variant="outline"
               >
                 Login
               </Button>
-              <Button component={Link} to={ROOT_ROUTES.SIGNUP} size="lg">
+              <Button component={Link} to={routes.SIGNUP} size="lg">
                 Sign Up
               </Button>
             </Group>
-          )}
+          }
 
-          {isAuthenticated && (
+          {
             <Stack gap="md">
               <Title order={3} ta="center">
                 Quick Links
               </Title>
 
               <Group grow>
-                <Button component={Link} to={ROOT_ROUTES.DIET} variant="light">
+                <Button component={Link} to={routes.DIET} variant="light">
                   Manage Diet
                 </Button>
-                <Button
-                  component={Link}
-                  to={ROOT_ROUTES.WEIGHT}
-                  variant="light"
-                >
+                <Button component={Link} to={routes.WEIGHT} variant="light">
                   Track Weight
                 </Button>
               </Group>
 
               <Group grow>
-                <Button
-                  component={Link}
-                  to={ROOT_ROUTES.EXERCISES}
-                  variant="light"
-                >
+                <Button component={Link} to={routes.EXERCISES} variant="light">
                   Track Exercises
                 </Button>
                 <Button
                   component={Link}
-                  to={ROOT_ROUTES.WORKOUT_PLAN}
+                  to={routes.WORKOUT_PLAN}
                   variant="light"
                 >
                   Workout Plans
                 </Button>
               </Group>
             </Stack>
-          )}
+          }
 
           <Stack gap="lg">
             <Title order={2} ta="center">

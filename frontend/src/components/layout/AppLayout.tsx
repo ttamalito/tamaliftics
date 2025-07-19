@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router';
-import { useAuth } from '@hooks/useAuth.ts';
-import { ROOT_ROUTES } from '@routes';
+//import { useAuth } from '@hooks/useAuth.ts';
+import { routes } from '@routes';
 import {
   AppShell,
   Burger,
@@ -26,31 +26,30 @@ import {
 
 export function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
-  const { isAuthenticated, logout } = useAuth();
   const location = useLocation();
 
   const navItems = [
-    { label: 'Home', icon: <IconHome size="1rem" />, to: ROOT_ROUTES.HOME },
-    { label: 'Diet', icon: <IconSalad size="1rem" />, to: ROOT_ROUTES.DIET },
+    { label: 'Home', icon: <IconHome size="1rem" />, to: routes.HOME },
+    { label: 'Diet', icon: <IconSalad size="1rem" />, to: routes.DIET },
     {
       label: 'Weight Tracking',
       icon: <IconWeight size="1rem" />,
-      to: ROOT_ROUTES.WEIGHT,
+      to: routes.WEIGHT,
     },
     {
       label: 'Exercise Categories',
       icon: <IconCategory size="1rem" />,
-      to: ROOT_ROUTES.EXERCISE_CATEGORIES,
+      to: routes.EXERCISE_CATEGORIES,
     },
     {
       label: 'Exercises',
       icon: <IconBarbell size="1rem" />,
-      to: ROOT_ROUTES.EXERCISES,
+      to: routes.EXERCISES,
     },
     {
       label: 'Workout Plan',
       icon: <IconCalendarStats size="1rem" />,
-      to: ROOT_ROUTES.WORKOUT_PLAN,
+      to: routes.WORKOUT_PLAN,
     },
   ];
 
@@ -75,8 +74,7 @@ export function AppLayout() {
             />
             <Title order={3}>Tamaliftics</Title>
           </Group>
-
-          {isAuthenticated ? (
+          {
             <Menu position="bottom-end" withArrow>
               <Menu.Target>
                 <Avatar color="blue" radius="xl" style={{ cursor: 'pointer' }}>
@@ -86,22 +84,23 @@ export function AppLayout() {
               <Menu.Dropdown>
                 <Menu.Item
                   leftSection={<IconLogout size={rem(14)} />}
-                  onClick={logout}
+                  //onClick={logout}
                 >
                   Logout
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
-          ) : (
-            <Group>
-              <Button component={Link} to={ROOT_ROUTES.LOGIN} variant="subtle">
-                Login
-              </Button>
-              <Button component={Link} to={ROOT_ROUTES.SIGNUP}>
-                Sign Up
-              </Button>
-            </Group>
-          )}
+          }
+          (
+          <Group>
+            <Button component={Link} to={routes.LOGIN} variant="subtle">
+              Login
+            </Button>
+            <Button component={Link} to={routes.SIGNUP}>
+              Sign Up
+            </Button>
+          </Group>
+          )
         </Group>
       </AppShell.Header>
 

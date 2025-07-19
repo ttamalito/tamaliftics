@@ -8,24 +8,24 @@ import { WeightPage } from './pages/weight/WeightPage';
 import { ExerciseCategoriesPage } from './pages/exercise/ExerciseCategoriesPage';
 import { ExercisesPage } from './pages/exercise/ExercisesPage';
 import { WorkoutPlanPage } from './pages/workout/WorkoutPlanPage';
-import { ROOT_ROUTES } from './routes/routes';
+import { routes } from '@routes';
 
 function App() {
   return (
     <Routes>
-      <Route path={ROOT_ROUTES.LOGIN} element={<LoginPage />} />
-      <Route path={ROOT_ROUTES.SIGNUP} element={<SignupPage />} />
+      <Route path={routes.LOGIN} element={<LoginPage />} />
+      <Route path={routes.SIGNUP} element={<SignupPage />} />
 
       <Route element={<AppLayout />}>
-        <Route path={ROOT_ROUTES.HOME} element={<HomePage />} />
-        <Route path={ROOT_ROUTES.DIET} element={<DietPage />} />
-        <Route path={ROOT_ROUTES.WEIGHT} element={<WeightPage />} />
+        <Route path={routes.HOME} element={<HomePage />} />
+        <Route path={routes.DIET} element={<DietPage />} />
+        <Route path={routes.WEIGHT} element={<WeightPage />} />
         <Route
-          path={ROOT_ROUTES.EXERCISE_CATEGORIES}
+          path={routes.EXERCISE_CATEGORIES}
           element={<ExerciseCategoriesPage />}
         />
-        <Route path={ROOT_ROUTES.EXERCISES} element={<ExercisesPage />} />
-        <Route path={ROOT_ROUTES.WORKOUT_PLAN} element={<WorkoutPlanPage />} />
+        <Route path={routes.EXERCISES} element={<ExercisesPage />} />
+        <Route path={routes.WORKOUT_PLAN} element={<WorkoutPlanPage />} />
       </Route>
     </Routes>
   );
