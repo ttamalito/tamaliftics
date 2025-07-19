@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Container,
   Title,
@@ -17,6 +17,8 @@ import {
   Grid,
   NumberInput,
   Box,
+  LoadingOverlay,
+  Drawer,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
@@ -37,13 +39,12 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { notifications } from '@mantine/notifications';
+import { ICreateExerciseDto, IGetExerciseCategoryDto } from '@clients';
+import { usePostExercise } from '@hooks/requests/exerciseRequests';
+import { useGetAllExerciseCategories } from '@hooks/requests/exerciseCategoryRequests';
 
 // Types for exercises
-interface ExerciseCategory {
-  id: string;
-  name: string;
-}
-
 interface ExerciseTrackPoint {
   id: string;
   date: Date;
@@ -61,12 +62,7 @@ interface Exercise {
   trackPoints: ExerciseTrackPoint[];
 }
 
-// Form values for exercise creation/editing
-interface ExerciseFormValues {
-  name: string;
-  description: string;
-  categoryId: string;
-}
+// Form values for exercise creation/editing is now using ICreateExerciseDto from @clients
 
 // Form values for track point creation
 interface TrackPointFormValues {
@@ -78,16 +74,52 @@ interface TrackPointFormValues {
 }
 
 export function ExercisesPage() {
-  // Mock data for categories
-  const categories: ExerciseCategory[] = [
-    { id: '1', name: 'Chest' },
-    { id: '2', name: 'Back' },
-    { id: '3', name: 'Legs' },
-    { id: '4', name: 'Arms' },
-    { id: '5', name: 'Shoulders' },
-    { id: '6', name: 'Core' },
-    { id: '7', name: 'Cardio' },
-  ];
+  // State for categories
+  const [categories, setCategories] = useState<IGetExerciseCategoryDto[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  const [
+    exerciseModalOpened,
+    { open: openExerciseModal, close: closeExerciseModal },
+  ] = useDisclosure(false);
+  const [
+    trackPointModalOpened,
+    { open: openTrackPointModal, close: closeTrackPointModal },
+  ] = useDisclosure(false);
+
+  // API hooks
+  const [getAllExerciseCategories] = useGetAllExerciseCategories();
+
+  // Fetch all categories
+  const fetchCategories = useCallback(async () => {
+    setCategoriesLoading(true);
+    setCategoriesError(null);
+    try {
+      const response = await getAllExerciseCategories();
+      if (response?.data) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch exercise categories';
+      setCategoriesError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+      });
+    } finally {
+      setCategoriesLoading(false);
+    }
+  }, []);
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, [exerciseModalOpened]);
 
   // Mock data for exercises
   const [exercises, setExercises] = useState<Exercise[]>([
@@ -195,17 +227,13 @@ export function ExercisesPage() {
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [editingTrackPoint, setEditingTrackPoint] =
     useState<ExerciseTrackPoint | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [
-    exerciseModalOpened,
-    { open: openExerciseModal, close: closeExerciseModal },
-  ] = useDisclosure(false);
-  const [
-    trackPointModalOpened,
-    { open: openTrackPointModal, close: closeTrackPointModal },
-  ] = useDisclosure(false);
+  // API hooks
+  const [createExercise] = usePostExercise();
 
-  const exerciseForm = useForm<ExerciseFormValues>({
+  const exerciseForm = useForm<ICreateExerciseDto>({
     initialValues: {
       name: '',
       description: '',
@@ -245,134 +273,206 @@ export function ExercisesPage() {
     },
   });
 
-  const handleOpenExerciseModal = (exercise?: Exercise) => {
-    if (exercise) {
-      setEditingExercise(exercise);
-      exerciseForm.setValues({
-        name: exercise.name,
-        description: exercise.description,
-        categoryId: exercise.categoryId,
-      });
-    } else {
-      setEditingExercise(null);
-      exerciseForm.reset();
-    }
-    openExerciseModal();
-  };
+  const handleOpenExerciseModal = useCallback(
+    (exercise?: Exercise) => {
+      if (exercise) {
+        setEditingExercise(exercise);
+        exerciseForm.setValues({
+          name: exercise.name,
+          description: exercise.description,
+          categoryId: exercise.categoryId,
+        });
+      } else {
+        setEditingExercise(null);
+        exerciseForm.reset();
+      }
+      openExerciseModal();
+    },
+    [exerciseForm, openExerciseModal],
+  );
 
-  const handleSubmitExercise = (values: ExerciseFormValues) => {
-    const newExercise: Exercise = {
-      id: editingExercise ? editingExercise.id : Date.now().toString(),
-      ...values,
-      trackPoints: editingExercise ? editingExercise.trackPoints : [],
-    };
+  const handleSubmitExercise = useCallback(
+    async (values: ICreateExerciseDto) => {
+      setLoading(true);
+      setError(null);
 
-    if (editingExercise) {
-      // Update existing exercise
+      try {
+        if (editingExercise) {
+          // Update existing exercise (not implemented in this example)
+          // Would use a putExercise hook here
+          const newExercise: Exercise = {
+            id: editingExercise.id,
+            ...values,
+            trackPoints: editingExercise.trackPoints,
+          };
+
+          setExercises(
+            exercises.map((ex) => {
+              return ex.id === editingExercise.id ? newExercise : ex;
+            }),
+          );
+
+          if (selectedExercise && selectedExercise.id === editingExercise.id) {
+            setSelectedExercise(newExercise);
+          }
+
+          notifications.show({
+            title: 'Success',
+            message: 'Exercise updated successfully',
+            color: 'green',
+          });
+        } else {
+          // Create new exercise using the API
+          const response = await createExercise(values);
+
+          if (response?.data) {
+            const newExercise: Exercise = {
+              id: response.data.id,
+              name: values.name,
+              description: values.description || '',
+              categoryId: values.categoryId,
+              trackPoints: [],
+            };
+
+            setExercises([...exercises, newExercise]);
+
+            notifications.show({
+              title: 'Success',
+              message: 'Exercise created successfully',
+              color: 'green',
+            });
+          }
+        }
+
+        // Reset form and close modal
+        exerciseForm.reset();
+        closeExerciseModal();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to save exercise';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      createExercise,
+      editingExercise,
+      exercises,
+      selectedExercise,
+      closeExerciseModal,
+      exerciseForm,
+    ],
+  );
+
+  const handleDeleteExercise = useCallback(
+    (id: string) => {
       setExercises(
-        exercises.map((ex) => {
-          return ex.id === editingExercise.id ? newExercise : ex;
+        exercises.filter((ex) => {
+          return ex.id !== id;
         }),
       );
-      if (selectedExercise && selectedExercise.id === editingExercise.id) {
-        setSelectedExercise(newExercise);
+      if (selectedExercise && selectedExercise.id === id) {
+        setSelectedExercise(null);
       }
-    } else {
-      // Add new exercise
-      setExercises([...exercises, newExercise]);
-    }
+    },
+    [exercises, selectedExercise],
+  );
 
-    closeExerciseModal();
-  };
+  const handleOpenTrackPointModal = useCallback(
+    (trackPoint?: ExerciseTrackPoint) => {
+      if (!selectedExercise) return;
 
-  const handleDeleteExercise = (id: string) => {
-    setExercises(
-      exercises.filter((ex) => {
-        return ex.id !== id;
-      }),
-    );
-    if (selectedExercise && selectedExercise.id === id) {
-      setSelectedExercise(null);
-    }
-  };
+      if (trackPoint) {
+        setEditingTrackPoint(trackPoint);
+        trackPointForm.setValues({
+          date: trackPoint.date,
+          reps: trackPoint.reps,
+          sets: trackPoint.sets,
+          weight: trackPoint.weight,
+          description: trackPoint.description || '',
+        });
+      } else {
+        setEditingTrackPoint(null);
+        trackPointForm.reset();
+      }
+      openTrackPointModal();
+    },
+    [selectedExercise, trackPointForm, openTrackPointModal],
+  );
 
-  const handleOpenTrackPointModal = (trackPoint?: ExerciseTrackPoint) => {
-    if (!selectedExercise) return;
+  const handleSubmitTrackPoint = useCallback(
+    (values: TrackPointFormValues) => {
+      if (!selectedExercise) return;
 
-    if (trackPoint) {
-      setEditingTrackPoint(trackPoint);
-      trackPointForm.setValues({
-        date: trackPoint.date,
-        reps: trackPoint.reps,
-        sets: trackPoint.sets,
-        weight: trackPoint.weight,
-        description: trackPoint.description || '',
+      const newTrackPoint: ExerciseTrackPoint = {
+        id: editingTrackPoint ? editingTrackPoint.id : Date.now().toString(),
+        ...values,
+      };
+
+      const updatedExercise = { ...selectedExercise };
+
+      if (editingTrackPoint) {
+        // Update existing track point
+        updatedExercise.trackPoints = updatedExercise.trackPoints.map((tp) => {
+          return tp.id === editingTrackPoint.id ? newTrackPoint : tp;
+        });
+      } else {
+        // Add new track point
+        updatedExercise.trackPoints = [
+          ...updatedExercise.trackPoints,
+          newTrackPoint,
+        ];
+      }
+
+      setExercises(
+        exercises.map((ex) => {
+          return ex.id === selectedExercise.id ? updatedExercise : ex;
+        }),
+      );
+      setSelectedExercise(updatedExercise);
+
+      closeTrackPointModal();
+    },
+    [selectedExercise, editingTrackPoint, exercises, closeTrackPointModal],
+  );
+
+  const handleDeleteTrackPoint = useCallback(
+    (id: string) => {
+      if (!selectedExercise) return;
+
+      const updatedExercise = { ...selectedExercise };
+      updatedExercise.trackPoints = updatedExercise.trackPoints.filter((tp) => {
+        return tp.id !== id;
       });
-    } else {
-      setEditingTrackPoint(null);
-      trackPointForm.reset();
-    }
-    openTrackPointModal();
-  };
 
-  const handleSubmitTrackPoint = (values: TrackPointFormValues) => {
-    if (!selectedExercise) return;
+      setExercises(
+        exercises.map((ex) => {
+          return ex.id === selectedExercise.id ? updatedExercise : ex;
+        }),
+      );
+      setSelectedExercise(updatedExercise);
+    },
+    [selectedExercise, exercises],
+  );
 
-    const newTrackPoint: ExerciseTrackPoint = {
-      id: editingTrackPoint ? editingTrackPoint.id : Date.now().toString(),
-      ...values,
-    };
-
-    const updatedExercise = { ...selectedExercise };
-
-    if (editingTrackPoint) {
-      // Update existing track point
-      updatedExercise.trackPoints = updatedExercise.trackPoints.map((tp) => {
-        return tp.id === editingTrackPoint.id ? newTrackPoint : tp;
+  const getCategoryName = useCallback(
+    (categoryId: string) => {
+      const category = categories.find((cat) => {
+        return cat.id === categoryId;
       });
-    } else {
-      // Add new track point
-      updatedExercise.trackPoints = [
-        ...updatedExercise.trackPoints,
-        newTrackPoint,
-      ];
-    }
-
-    setExercises(
-      exercises.map((ex) => {
-        return ex.id === selectedExercise.id ? updatedExercise : ex;
-      }),
-    );
-    setSelectedExercise(updatedExercise);
-
-    closeTrackPointModal();
-  };
-
-  const handleDeleteTrackPoint = (id: string) => {
-    if (!selectedExercise) return;
-
-    const updatedExercise = { ...selectedExercise };
-    updatedExercise.trackPoints = updatedExercise.trackPoints.filter((tp) => {
-      return tp.id !== id;
-    });
-
-    setExercises(
-      exercises.map((ex) => {
-        return ex.id === selectedExercise.id ? updatedExercise : ex;
-      }),
-    );
-    setSelectedExercise(updatedExercise);
-  };
-
-  const getCategoryName = (categoryId: string) => {
-    const category = categories.find((cat) => {
-      return cat.id === categoryId;
-    });
-    return category ? category.name : 'Unknown';
-  };
+      return category ? category.name : 'Unknown';
+    },
+    [categories],
+  );
 
   // Prepare chart data for the selected exercise
-  const prepareChartData = () => {
+  const prepareChartData = useCallback(() => {
     if (!selectedExercise) return { repsData: [], weightData: [] };
 
     const sortedTrackPoints = [...selectedExercise.trackPoints].sort((a, b) => {
@@ -394,13 +494,81 @@ export function ExercisesPage() {
     });
 
     return { repsData, weightData };
-  };
+  }, [selectedExercise]);
 
   const { repsData, weightData } = prepareChartData();
 
+  // Memoize the exercises list
+  const exercisesList = useMemo(() => {
+    return (
+      <Stack gap="md">
+        {exercises.map((exercise) => {
+          return (
+            <Card
+              key={exercise.id}
+              withBorder
+              shadow="sm"
+              padding="md"
+              onClick={() => {
+                return setSelectedExercise(exercise);
+              }}
+              style={{
+                cursor: 'pointer',
+                backgroundColor:
+                  selectedExercise?.id === exercise.id ? '#f0f0f0' : undefined,
+              }}
+            >
+              <Group justify="space-between">
+                <div>
+                  <Title order={3}>{exercise.name}</Title>
+                  <Text size="sm" c="dimmed">
+                    Category: {getCategoryName(exercise.categoryId)}
+                  </Text>
+                </div>
+                <Group>
+                  <ActionIcon
+                    variant="subtle"
+                    color="blue"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenExerciseModal(exercise);
+                    }}
+                  >
+                    <IconEdit size="1rem" />
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteExercise(exercise.id);
+                    }}
+                  >
+                    <IconTrash size="1rem" />
+                  </ActionIcon>
+                </Group>
+              </Group>
+              <Text mt="xs">{exercise.description}</Text>
+              <Text size="sm" mt="md">
+                <b>Track Points:</b> {exercise.trackPoints.length}
+              </Text>
+            </Card>
+          );
+        })}
+      </Stack>
+    );
+  }, [
+    exercises,
+    selectedExercise,
+    getCategoryName,
+    handleOpenExerciseModal,
+    handleDeleteExercise,
+  ]);
+
   return (
     <Container size="lg" py="xl">
-      <Paper shadow="md" p="xl" radius="md" withBorder mb="xl">
+      <Paper shadow="md" p="xl" radius="md" withBorder mb="xl" pos="relative">
+        <LoadingOverlay visible={loading} />
         <Group justify="space-between" mb="xl">
           <Title order={1}>Exercises</Title>
           <Button
@@ -418,63 +586,13 @@ export function ExercisesPage() {
             No exercises added yet.
           </Text>
         ) : (
-          <Stack gap="md">
-            {exercises.map((exercise) => {
-              return (
-                <Card
-                  key={exercise.id}
-                  withBorder
-                  shadow="sm"
-                  padding="md"
-                  onClick={() => {
-                    return setSelectedExercise(exercise);
-                  }}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor:
-                      selectedExercise?.id === exercise.id
-                        ? '#f0f0f0'
-                        : undefined,
-                  }}
-                >
-                  <Group justify="space-between">
-                    <div>
-                      <Title order={3}>{exercise.name}</Title>
-                      <Text size="sm" c="dimmed">
-                        Category: {getCategoryName(exercise.categoryId)}
-                      </Text>
-                    </div>
-                    <Group>
-                      <ActionIcon
-                        variant="subtle"
-                        color="blue"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenExerciseModal(exercise);
-                        }}
-                      >
-                        <IconEdit size="1rem" />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteExercise(exercise.id);
-                        }}
-                      >
-                        <IconTrash size="1rem" />
-                      </ActionIcon>
-                    </Group>
-                  </Group>
-                  <Text mt="xs">{exercise.description}</Text>
-                  <Text size="sm" mt="md">
-                    <b>Track Points:</b> {exercise.trackPoints.length}
-                  </Text>
-                </Card>
-              );
-            })}
-          </Stack>
+          exercisesList
+        )}
+
+        {error && (
+          <Paper shadow="md" p="md" radius="md" withBorder mt="md" bg="red.1">
+            <Text c="red">{error}</Text>
+          </Paper>
         )}
       </Paper>
 
@@ -653,11 +771,10 @@ export function ExercisesPage() {
       )}
 
       {/* Exercise Modal */}
-      <Modal
+      <Drawer
         opened={exerciseModalOpened}
         onClose={closeExerciseModal}
         title={editingExercise ? 'Edit Exercise' : 'Add New Exercise'}
-        centered
       >
         <form onSubmit={exerciseForm.onSubmit(handleSubmitExercise)}>
           <Stack>
@@ -665,12 +782,14 @@ export function ExercisesPage() {
               label="Name"
               placeholder="Exercise name"
               required
+              key={exerciseForm.key('name')}
               {...exerciseForm.getInputProps('name')}
             />
 
             <Textarea
               label="Description"
               placeholder="Exercise description"
+              key={exerciseForm.key('description')}
               {...exerciseForm.getInputProps('description')}
             />
 
@@ -681,8 +800,16 @@ export function ExercisesPage() {
                 return { value: cat.id, label: cat.name };
               })}
               required
+              loading={categoriesLoading}
+              key={exerciseForm.key('categoryId')}
               {...exerciseForm.getInputProps('categoryId')}
             />
+
+            {categoriesError && (
+              <Text size="sm" c="red">
+                Error loading categories: {categoriesError}
+              </Text>
+            )}
 
             <Group justify="flex-end" mt="md">
               <Button variant="subtle" onClick={closeExerciseModal}>
@@ -694,7 +821,7 @@ export function ExercisesPage() {
             </Group>
           </Stack>
         </form>
-      </Modal>
+      </Drawer>
 
       {/* Track Point Modal */}
       <Modal
