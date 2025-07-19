@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8080/api",
+      "url": "http://localhost:8081/api",
       "description": "Generated server url"
     }
   ],
@@ -1951,6 +1951,36 @@
           }
         }
       }
+    },
+    "/auth/delete/users/{username}": {
+      "delete": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2070,6 +2100,10 @@
           },
           "description": {
             "type": "string"
+          },
+          "weight": {
+            "type": "number",
+            "format": "float"
           },
           "exerciseId": {
             "type": "string",
@@ -2280,6 +2314,10 @@
           "description": {
             "type": "string"
           },
+          "weight": {
+            "type": "number",
+            "format": "float"
+          },
           "exerciseId": {
             "type": "string",
             "format": "uuid"
@@ -2313,6 +2351,10 @@
           },
           "description": {
             "type": "string"
+          },
+          "weight": {
+            "type": "number",
+            "format": "float"
           },
           "exerciseId": {
             "type": "string",

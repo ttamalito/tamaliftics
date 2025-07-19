@@ -7,7 +7,6 @@
 /* tslint:disable */
 /* eslint-disable */
 // ReSharper disable InconsistentNaming
-/* @ts-ignore */
 export class UpdateWorkoutPlanDto implements IUpdateWorkoutPlanDto {
     id!: string;
     type?: UpdateWorkoutPlanDtoType;
@@ -235,6 +234,7 @@ export class UpdateExerciseTrackPointDto implements IUpdateExerciseTrackPointDto
             this.repsCount = _data["repsCount"];
             this.setsCount = _data["setsCount"];
             this.description = _data["description"];
+            this.weight = _data["weight"];
             this.exerciseId = _data["exerciseId"];
         }
     }
@@ -257,6 +257,7 @@ export class UpdateExerciseTrackPointDto implements IUpdateExerciseTrackPointDto
         data["repsCount"] = this.repsCount;
         data["setsCount"] = this.setsCount;
         data["description"] = this.description;
+        data["weight"] = this.weight;
         data["exerciseId"] = this.exerciseId;
         return data;
     }
@@ -715,6 +716,7 @@ export class CreateExerciseTrackPointDto implements ICreateExerciseTrackPointDto
     repsCount!: number;
     setsCount!: number;
     description?: string;
+    weight?: number;
     exerciseId!: string;
 
     [key: string]: any;
@@ -738,6 +740,7 @@ export class CreateExerciseTrackPointDto implements ICreateExerciseTrackPointDto
             this.repsCount = _data["repsCount"];
             this.setsCount = _data["setsCount"];
             this.description = _data["description"];
+            this.weight = _data["weight"];
             this.exerciseId = _data["exerciseId"];
         }
     }
@@ -759,6 +762,7 @@ export class CreateExerciseTrackPointDto implements ICreateExerciseTrackPointDto
         data["repsCount"] = this.repsCount;
         data["setsCount"] = this.setsCount;
         data["description"] = this.description;
+        data["weight"] = this.weight;
         data["exerciseId"] = this.exerciseId;
         return data;
     }
@@ -769,6 +773,7 @@ export interface ICreateExerciseTrackPointDto {
     repsCount: number;
     setsCount: number;
     description?: string;
+    weight?: number;
     exerciseId: string;
 
     [key: string]: any;
@@ -780,6 +785,7 @@ export class GetExerciseTrackPointDto implements IGetExerciseTrackPointDto {
     repsCount?: number;
     setsCount?: number;
     description?: string;
+    weight?: number;
     exerciseId?: string;
 
     [key: string]: any;
@@ -804,6 +810,7 @@ export class GetExerciseTrackPointDto implements IGetExerciseTrackPointDto {
             this.repsCount = _data["repsCount"];
             this.setsCount = _data["setsCount"];
             this.description = _data["description"];
+            this.weight = _data["weight"];
             this.exerciseId = _data["exerciseId"];
         }
     }
@@ -826,6 +833,7 @@ export class GetExerciseTrackPointDto implements IGetExerciseTrackPointDto {
         data["repsCount"] = this.repsCount;
         data["setsCount"] = this.setsCount;
         data["description"] = this.description;
+        data["weight"] = this.weight;
         data["exerciseId"] = this.exerciseId;
         return data;
     }
@@ -837,6 +845,7 @@ export interface IGetExerciseTrackPointDto {
     repsCount?: number;
     setsCount?: number;
     description?: string;
+    weight?: number;
     exerciseId?: string;
 
     [key: string]: any;
