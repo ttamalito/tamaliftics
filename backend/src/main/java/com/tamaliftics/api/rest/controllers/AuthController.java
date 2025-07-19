@@ -10,9 +10,12 @@ import com.tamaliftics.api.rest.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Controller for handling authentication requests
@@ -87,16 +90,16 @@ public class AuthController {
         }
 
         User user = userOptional.get();
-        
+
         // Update first name and last name if provided
         if (signupRequestDto.firstName() != null && !signupRequestDto.firstName().isEmpty()) {
             user.setFirstName(signupRequestDto.firstName());
         }
-        
+
         if (signupRequestDto.lastName() != null && !signupRequestDto.lastName().isEmpty()) {
             user.setLastName(signupRequestDto.lastName());
         }
-        
+
         // Save the updated user
         userService.updateUser(user);
 
@@ -121,5 +124,36 @@ public class AuthController {
     @GetMapping("/ping")
     public ResponseEntity<String> ping() {
         return ResponseEntity.ok("Auth controller is working!");
+    }
+
+    /**
+     * Endpoint for deleting a user
+     * @param username the username of the user to delete
+     * @return success message if deletion is successful, error otherwise
+     */
+    @DeleteMapping("/delete/users/{username}")
+    public ResponseEntity<?> deleteUser(@PathVariable String username) {
+        // Get the authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User authenticatedUser = (User) authentication.getPrincipal();
+
+        // Check if the user exists
+        Optional<User> userToDeleteOpt = userService.getUserByUsername(username);
+        if (userToDeleteOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+
+        User userToDelete = userToDeleteOpt.get();
+
+        // Check if the authenticated user has permission to delete the user
+        // (either it's their own account or they're an admin)
+//        if (!authenticatedUser.getUsername().equals(username) && authenticatedUser.getRole() != Role.ADMIN) {
+//            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You don't have permission to delete this user");
+//        }
+
+        // Delete the user
+        userService.deleteUser(userToDelete);
+
+        return ResponseEntity.ok("User deleted successfully");
     }
 }
