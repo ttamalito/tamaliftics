@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Container,
   Title,
@@ -14,10 +14,18 @@ import {
   Select,
   Tabs,
   Box,
+  LoadingOverlay,
+  ActionIcon,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
-import { IconPlus, IconChartLine } from '@tabler/icons-react';
+import {
+  IconPlus,
+  IconChartLine,
+  IconEdit,
+  IconTrash,
+} from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 import {
   LineChart,
   Line,
@@ -28,149 +36,322 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-
-// Types for weight tracking
-interface DailyWeight {
-  id: string;
-  date: Date;
-  weight: number;
-  notes?: string;
-}
-
-interface WeeklyWeight {
-  weekStartDate: Date;
-  weekEndDate: Date;
-  averageWeight: number;
-}
-
-// Form values for weight entry
-interface WeightFormValues {
-  date: Date;
-  weight: number;
-  notes?: string;
-}
+import {
+  ICreateDailyWeightDto,
+  IUpdateDailyWeightDto,
+  IGetDailyWeightDto,
+  IGetWeeklyWeightDto,
+} from '@clients';
+import {
+  usePostDailyWeight,
+  usePutDailyWeight,
+  //useGetDailyWeightById,
+  useGetAllDailyWeights,
+  useGetDailyWeightsBetweenDates,
+  useDeleteDailyWeight,
+} from '@hooks/requests/dailyWeightRequests';
+import {
+  //useGetWeeklyWeightById,
+  useGetAllWeeklyWeights,
+  useGetWeeklyWeightsByYear,
+  useGetWeeklyWeightsBetweenDates,
+  useGetWeeklyWeightForDate,
+} from '@hooks/requests/weeklyWeightRequests';
 
 export function WeightPage() {
-  // Mock data for daily weights
-  const [dailyWeights, setDailyWeights] = useState<DailyWeight[]>([
-    {
-      id: '1',
-      date: new Date(2025, 6, 1),
-      weight: 70.5,
-      notes: 'Morning weight',
-    },
-    {
-      id: '2',
-      date: new Date(2025, 6, 2),
-      weight: 70.3,
-      notes: 'After workout',
-    },
-    {
-      id: '3',
-      date: new Date(2025, 6, 3),
-      weight: 70.2,
-      notes: 'Before breakfast',
-    },
-    {
-      id: '4',
-      date: new Date(2025, 6, 4),
-      weight: 70.0,
-      notes: 'Morning weight',
-    },
-    {
-      id: '5',
-      date: new Date(2025, 6, 5),
-      weight: 69.8,
-      notes: 'Morning weight',
-    },
-    {
-      id: '6',
-      date: new Date(2025, 6, 6),
-      weight: 69.7,
-      notes: 'After cardio',
-    },
-    {
-      id: '7',
-      date: new Date(2025, 6, 7),
-      weight: 69.5,
-      notes: 'Morning weight',
-    },
-  ]);
+  // State for weight data
+  const [dailyWeights, setDailyWeights] = useState<IGetDailyWeightDto[]>([]);
+  const [weeklyWeights, setWeeklyWeights] = useState<IGetWeeklyWeightDto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [editingWeight, setEditingWeight] = useState<IGetDailyWeightDto | null>(
+    null,
+  );
 
-  // Calculate weekly weights based on daily weights
-  const calculateWeeklyWeights = (): WeeklyWeight[] => {
-    if (dailyWeights.length === 0) return [];
+  // API hooks
+  const [createDailyWeight] = usePostDailyWeight();
+  const [updateDailyWeight] = usePutDailyWeight();
+  //const [getDailyWeightById] = useGetDailyWeightById();
+  const [getAllDailyWeights] = useGetAllDailyWeights();
+  const [getDailyWeightsBetweenDates] = useGetDailyWeightsBetweenDates();
+  const [deleteDailyWeight] = useDeleteDailyWeight();
 
-    // Group weights by week
-    const weekMap = new Map<string, DailyWeight[]>();
+  //const [getWeeklyWeightById] = useGetWeeklyWeightById();
+  const [getAllWeeklyWeights] = useGetAllWeeklyWeights();
+  const [getWeeklyWeightsByYear] = useGetWeeklyWeightsByYear();
+  const [getWeeklyWeightsBetweenDates] = useGetWeeklyWeightsBetweenDates();
+  const [getWeeklyWeightForDate] = useGetWeeklyWeightForDate();
 
-    dailyWeights.forEach((weight) => {
-      const date = new Date(weight.date);
-      // Get the start of the week (Sunday)
-      const day = date.getDay();
-      const diff = date.getDate() - day;
-      const weekStart = new Date(date);
-      weekStart.setDate(diff);
-      weekStart.setHours(0, 0, 0, 0);
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchDailyWeights();
+    fetchWeeklyWeights();
+  }, []);
 
-      const weekKey = weekStart.toISOString();
-
-      if (!weekMap.has(weekKey)) {
-        weekMap.set(weekKey, []);
+  // Fetch all daily weights
+  const fetchDailyWeights = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getAllDailyWeights();
+      if (response?.data) {
+        setDailyWeights(response.data);
       }
-
-      weekMap.get(weekKey)?.push(weight);
-    });
-
-    // Calculate average weight for each week
-    const weeklyWeights: WeeklyWeight[] = [];
-
-    weekMap.forEach((weights, weekKey) => {
-      const weekStart = new Date(weekKey);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-
-      const totalWeight = weights.reduce((sum, weight) => {
-        return sum + weight.weight;
-      }, 0);
-      const averageWeight = totalWeight / weights.length;
-
-      weeklyWeights.push({
-        weekStartDate: weekStart,
-        weekEndDate: weekEnd,
-        averageWeight: parseFloat(averageWeight.toFixed(1)),
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch daily weights';
+      setError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
       });
-    });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    // Sort by date
-    return weeklyWeights.sort((a, b) => {
-      return a.weekStartDate.getTime() - b.weekStartDate.getTime();
-    });
-  };
+  // Fetch daily weight by ID
+  // const fetchDailyWeightById = useCallback(async (id: string) => {
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     const response = await getDailyWeightById(id);
+  //     if (response?.data) {
+  //       // Since this returns a single weight, we'll put it in an array
+  //       setDailyWeights([response.data]);
+  //       notifications.show({
+  //         title: 'Success',
+  //         message: 'Daily weight fetched successfully',
+  //         color: 'green',
+  //       });
+  //     }
+  //   } catch (error) {
+  //     const errorMessage =
+  //       error instanceof Error ? error.message : 'Failed to fetch daily weight';
+  //     setError(errorMessage);
+  //     notifications.show({
+  //       title: 'Error',
+  //       message: errorMessage,
+  //       color: 'red',
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, []);
 
-  const weeklyWeights = calculateWeeklyWeights();
+  // Fetch daily weights between dates
+  const fetchDailyWeightsBetweenDates = useCallback(
+    async (startDate: string, endDate: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await getDailyWeightsBetweenDates(startDate, endDate);
+        if (response?.data) {
+          setDailyWeights(response.data);
+          notifications.show({
+            title: 'Success',
+            message: 'Daily weights fetched successfully',
+            color: 'green',
+          });
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch daily weights between dates';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
-  // Prepare data for charts
-  const chartData = weeklyWeights.map((week) => {
-    return {
-      week: `${week.weekStartDate.toLocaleDateString()} - ${week.weekEndDate.toLocaleDateString()}`,
-      weight: week.averageWeight,
-    };
-  });
+  // Fetch all weekly weights
+  const fetchWeeklyWeights = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getAllWeeklyWeights();
+      if (response?.data) {
+        setWeeklyWeights(response.data);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch weekly weights';
+      setError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const dailyChartData = dailyWeights
-    .sort((a, b) => {
-      return a.date.getTime() - b.date.getTime();
-    })
-    .map((day) => {
+  // Fetch weekly weights by year
+  const fetchWeeklyWeightsByYear = useCallback(async (year: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getWeeklyWeightsByYear(year);
+      if (response?.data) {
+        setWeeklyWeights(response.data);
+        notifications.show({
+          title: 'Success',
+          message: `Weekly weights for ${year} fetched successfully`,
+          color: 'green',
+        });
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : `Failed to fetch weekly weights for year ${year}`;
+      setError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch weekly weights between dates
+  const fetchWeeklyWeightsBetweenDates = useCallback(
+    async (startDate: string, endDate: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await getWeeklyWeightsBetweenDates(startDate, endDate);
+        if (response?.data) {
+          setWeeklyWeights(response.data);
+          notifications.show({
+            title: 'Success',
+            message: 'Weekly weights fetched successfully',
+            color: 'green',
+          });
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch weekly weights between dates';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // Fetch weekly weight for a specific date
+  const fetchWeeklyWeightForDate = useCallback(async (date: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getWeeklyWeightForDate(date);
+      if (response?.data) {
+        // Since this returns a single weight, we'll put it in an array
+        setWeeklyWeights([response.data]);
+        notifications.show({
+          title: 'Success',
+          message: 'Weekly weight fetched successfully',
+          color: 'green',
+        });
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch weekly weight for date';
+      setError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch weekly weight by ID
+
+  // @ts-ignore
+  // const fetchWeeklyWeightById = useCallback(async (id: string) => {
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     const response = await getWeeklyWeightById(id);
+  //     if (response?.data) {
+  //       // Since this returns a single weight, we'll put it in an array
+  //       setWeeklyWeights([response.data]);
+  //       notifications.show({
+  //         title: 'Success',
+  //         message: 'Weekly weight fetched successfully',
+  //         color: 'green',
+  //       });
+  //     }
+  //   } catch (error) {
+  //     const errorMessage =
+  //       error instanceof Error
+  //         ? error.message
+  //         : 'Failed to fetch weekly weight';
+  //     setError(errorMessage);
+  //     notifications.show({
+  //       title: 'Error',
+  //       message: errorMessage,
+  //       color: 'red',
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, []);
+
+  // Prepare data for charts using useMemo to optimize
+  const chartData = useMemo(() => {
+    return weeklyWeights.map((week) => {
       return {
-        date: day.date.toLocaleDateString(),
-        weight: day.weight,
+        week: `${new Date(week.weekStartDate).toLocaleDateString()} - ${new Date(week.weekEndDate).toLocaleDateString()}`,
+        weight: week.averageWeight,
       };
     });
+  }, [weeklyWeights]);
 
-  // Form for adding new weight entries
-  const form = useForm<WeightFormValues>({
+  const dailyChartData = useMemo(() => {
+    return dailyWeights
+      .sort((a, b) => {
+        return new Date(a.date!).getTime() - new Date(b.date!).getTime();
+      })
+      .map((day) => {
+        return {
+          date: new Date(day.date!).toLocaleDateString(),
+          weight: day.weight,
+        };
+      });
+  }, [dailyWeights]);
+
+  // Form for adding/editing weight entries
+  const form = useForm<ICreateDailyWeightDto>({
     initialValues: {
       date: new Date(),
       weight: 0,
@@ -181,26 +362,192 @@ export function WeightPage() {
         return value ? null : 'Date is required';
       },
       weight: (value) => {
-        return value <= 0 ? 'Weight must be greater than 0' : null;
+        return value && value <= 0 ? 'Weight must be greater than 0' : null;
       },
     },
   });
 
-  const handleSubmit = (values: WeightFormValues) => {
-    const newWeight: DailyWeight = {
-      id: Date.now().toString(),
-      date: values.date,
-      weight: values.weight,
-      notes: values.notes,
-    };
+  // Handle editing a weight entry
+  const handleEditWeight = useCallback(
+    (weight: IGetDailyWeightDto) => {
+      setEditingWeight(weight);
+      form.setValues({
+        date: new Date(weight.date!),
+        weight: weight.weight,
+        notes: weight.notes || '',
+      });
+    },
+    [form],
+  );
 
-    setDailyWeights([...dailyWeights, newWeight]);
-    form.reset();
-  };
+  // Handle deleting a weight entry
+  const handleDeleteWeight = useCallback(
+    async (id: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await deleteDailyWeight(id);
+        if (response) {
+          // Remove the deleted weight from the local state
+          setDailyWeights((prevWeights) => {
+            return prevWeights.filter((w) => {
+              return w.id !== id;
+            });
+          });
+          notifications.show({
+            title: 'Success',
+            message: 'Weight entry deleted successfully',
+            color: 'green',
+          });
+          // Refresh data
+          fetchDailyWeights();
+          fetchWeeklyWeights();
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to delete weight entry';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchDailyWeights, fetchWeeklyWeights],
+  );
+
+  // Handle form submission (create or update)
+  const handleSubmit = useCallback(
+    async (values: ICreateDailyWeightDto) => {
+      setLoading(true);
+      setError(null);
+      try {
+        let response;
+
+        if (editingWeight) {
+          // Update existing weight entry
+          const updateData: IUpdateDailyWeightDto = {
+            id: editingWeight.id!,
+            ...values,
+          };
+          response = await updateDailyWeight(updateData);
+
+          if (response?.data) {
+            notifications.show({
+              title: 'Success',
+              message: 'Weight entry updated successfully',
+              color: 'green',
+            });
+          }
+        } else {
+          // Create new weight entry
+          response = await createDailyWeight(values);
+
+          if (response?.data) {
+            notifications.show({
+              title: 'Success',
+              message: 'Weight entry created successfully',
+              color: 'green',
+            });
+          }
+        }
+
+        // Reset form and editing state
+        form.reset();
+        setEditingWeight(null);
+
+        // Refresh data
+        fetchDailyWeights();
+        fetchWeeklyWeights();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to save weight entry';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [editingWeight, form, fetchDailyWeights, fetchWeeklyWeights],
+  );
+
+  // State for advanced filters
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<number>(
+    new Date().getFullYear(),
+  );
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
+    null,
+    null,
+  ]);
+  const [specificDate, setSpecificDate] = useState<Date | null>(null);
 
   // Filter options for chart display
   const [timeRange, setTimeRange] = useState<string>('year');
   const [activeTab, setActiveTab] = useState<string | null>('weekly');
+
+  // Handle applying advanced filters
+  const handleApplyYearFilter = useCallback(() => {
+    if (selectedYear) {
+      fetchWeeklyWeightsByYear(selectedYear);
+    }
+  }, [selectedYear, fetchWeeklyWeightsByYear]);
+
+  const handleApplyDateRangeFilter = useCallback(() => {
+    if (dateRange[0] && dateRange[1]) {
+      const startDate = dateRange[0].toISOString().split('T')[0];
+      const endDate = dateRange[1].toISOString().split('T')[0];
+
+      if (activeTab === 'weekly') {
+        fetchWeeklyWeightsBetweenDates(startDate, endDate);
+      } else {
+        fetchDailyWeightsBetweenDates(startDate, endDate);
+      }
+    }
+  }, [
+    dateRange,
+    activeTab,
+    fetchWeeklyWeightsBetweenDates,
+    fetchDailyWeightsBetweenDates,
+  ]);
+
+  const handleApplySpecificDateFilter = useCallback(() => {
+    if (specificDate) {
+      const dateStr = specificDate.toISOString().split('T')[0];
+
+      if (activeTab === 'weekly') {
+        fetchWeeklyWeightForDate(dateStr);
+      } else {
+        // For daily weights, we can use the ID if we know it, or fetch by date range with same start/end date
+        fetchDailyWeightsBetweenDates(dateStr, dateStr);
+      }
+    }
+  }, [
+    specificDate,
+    activeTab,
+    fetchWeeklyWeightForDate,
+    fetchDailyWeightsBetweenDates,
+  ]);
+
+  // Reset filters and fetch all data
+  const handleResetFilters = useCallback(() => {
+    setSelectedYear(new Date().getFullYear());
+    setDateRange([null, null]);
+    setSpecificDate(null);
+    fetchDailyWeights();
+    fetchWeeklyWeights();
+  }, [fetchDailyWeights, fetchWeeklyWeights]);
 
   // Filter data based on selected time range
   const filterDataByTimeRange = (data: any[], dateKey: string) => {
@@ -236,7 +583,8 @@ export function WeightPage() {
 
   return (
     <Container size="lg" py="xl">
-      <Paper shadow="md" p="xl" radius="md" withBorder mb="xl">
+      <Paper shadow="md" p="xl" radius="md" withBorder mb="xl" pos="relative">
+        <LoadingOverlay visible={loading} />
         <Title order={1} mb="xl">
           Weight Tracking
         </Title>
@@ -256,7 +604,6 @@ export function WeightPage() {
               <NumberInput
                 label="Weight (kg)"
                 placeholder="Enter weight"
-                //precision={1}
                 min={0}
                 step={0.1}
                 required
@@ -274,31 +621,125 @@ export function WeightPage() {
           </Grid>
 
           <Group justify="flex-end" mt="md">
-            <Button type="submit" leftSection={<IconPlus size="1rem" />}>
-              Add Weight Entry
-            </Button>
+            {editingWeight ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    return setEditingWeight(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" color="blue">
+                  Update Weight Entry
+                </Button>
+              </>
+            ) : (
+              <Button type="submit" leftSection={<IconPlus size="1rem" />}>
+                Add Weight Entry
+              </Button>
+            )}
           </Group>
         </form>
       </Paper>
 
-      <Paper shadow="md" p="xl" radius="md" withBorder>
+      <Paper shadow="md" p="xl" radius="md" withBorder pos="relative">
+        <LoadingOverlay visible={loading} />
         <Group justify="space-between" mb="xl">
           <Title order={2}>Weight Progress</Title>
 
-          <Select
-            value={timeRange}
-            onChange={(value) => {
-              return setTimeRange(value || 'year');
-            }}
-            data={[
-              { value: 'month', label: 'Last Month' },
-              { value: 'quarter', label: 'Last 3 Months' },
-              { value: 'year', label: 'Last Year' },
-              { value: 'all', label: 'All Time' },
-            ]}
-            placeholder="Select time range"
-          />
+          <Group>
+            <Button
+              variant="outline"
+              onClick={() => {
+                return setShowAdvancedFilters(!showAdvancedFilters);
+              }}
+            >
+              {showAdvancedFilters
+                ? 'Hide Advanced Filters'
+                : 'Show Advanced Filters'}
+            </Button>
+            <Select
+              value={timeRange}
+              onChange={(value) => {
+                return setTimeRange(value || 'year');
+              }}
+              data={[
+                { value: 'month', label: 'Last Month' },
+                { value: 'quarter', label: 'Last 3 Months' },
+                { value: 'year', label: 'Last Year' },
+                { value: 'all', label: 'All Time' },
+              ]}
+              placeholder="Select time range"
+            />
+          </Group>
         </Group>
+
+        {showAdvancedFilters && (
+          <Paper p="md" mb="xl" withBorder>
+            <Stack>
+              <Title order={4}>Advanced Filters</Title>
+
+              <Grid>
+                <Grid.Col span={{ base: 12, md: 4 }}>
+                  <NumberInput
+                    label="Filter by Year"
+                    placeholder="Enter year"
+                    value={selectedYear}
+                    onChange={(value) => {
+                      return setSelectedYear(
+                        Number(value) || new Date().getFullYear(),
+                      );
+                    }}
+                    min={2000}
+                    max={new Date().getFullYear()}
+                  />
+                  <Button mt="sm" onClick={handleApplyYearFilter} fullWidth>
+                    Get Weekly Weights by Year
+                  </Button>
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 12, md: 4 }}>
+                  <DatePickerInput
+                    type="range"
+                    label="Filter by Date Range"
+                    placeholder="Select date range"
+                    value={dateRange}
+                    onChange={setDateRange}
+                  />
+                  <Button
+                    mt="sm"
+                    onClick={handleApplyDateRangeFilter}
+                    fullWidth
+                  >
+                    Get Weights by Date Range
+                  </Button>
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 12, md: 4 }}>
+                  <DatePickerInput
+                    label="Filter by Specific Date"
+                    placeholder="Select date"
+                    value={specificDate}
+                    onChange={setSpecificDate}
+                  />
+                  <Button
+                    mt="sm"
+                    onClick={handleApplySpecificDateFilter}
+                    fullWidth
+                  >
+                    Get Weight for Date
+                  </Button>
+                </Grid.Col>
+              </Grid>
+
+              <Button variant="outline" onClick={handleResetFilters}>
+                Reset Filters
+              </Button>
+            </Stack>
+          </Paper>
+        )}
 
         <Tabs value={activeTab} onChange={setActiveTab} mb="xl">
           <Tabs.List>
@@ -381,21 +822,49 @@ export function WeightPage() {
           {dailyWeights.length > 0 ? (
             dailyWeights
               .sort((a, b) => {
-                return b.date.getTime() - a.date.getTime();
+                return (
+                  new Date(b.date!).getTime() - new Date(a.date!).getTime()
+                );
               })
               .slice(0, 7)
               .map((entry) => {
                 return (
                   <Card key={entry.id} withBorder shadow="sm" padding="md">
                     <Group justify="space-between">
-                      <Text fw={500}>{entry.date.toLocaleDateString()}</Text>
-                      <Text fw={700}>{entry.weight} kg</Text>
+                      <div>
+                        <Text fw={500}>
+                          {new Date(
+                            entry.date?.toString() ?? '01/01/2001',
+                          ).toLocaleDateString()}
+                        </Text>
+                        {entry.notes && (
+                          <Text size="sm" c="dimmed" mt="xs">
+                            {entry.notes}
+                          </Text>
+                        )}
+                      </div>
+                      <Group>
+                        <Text fw={700}>{entry.weight} kg</Text>
+                        <ActionIcon
+                          color="blue"
+                          onClick={() => {
+                            return handleEditWeight(entry);
+                          }}
+                          aria-label="Edit weight entry"
+                        >
+                          <IconEdit size="1rem" />
+                        </ActionIcon>
+                        <ActionIcon
+                          color="red"
+                          onClick={() => {
+                            return handleDeleteWeight(entry.id!);
+                          }}
+                          aria-label="Delete weight entry"
+                        >
+                          <IconTrash size="1rem" />
+                        </ActionIcon>
+                      </Group>
                     </Group>
-                    {entry.notes && (
-                      <Text size="sm" c="dimmed" mt="xs">
-                        {entry.notes}
-                      </Text>
-                    )}
                   </Card>
                 );
               })
@@ -404,6 +873,12 @@ export function WeightPage() {
           )}
         </Stack>
       </Paper>
+
+      {error && (
+        <Paper shadow="md" p="md" radius="md" withBorder mt="md" bg="red.1">
+          <Text c="red">{error}</Text>
+        </Paper>
+      )}
     </Container>
   );
 }
