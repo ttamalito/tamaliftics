@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Container,
   Title,
@@ -9,217 +9,275 @@ import {
   Stack,
   Card,
   ActionIcon,
-  Modal,
+  Drawer,
   Textarea,
   Select,
-  Tabs,
   MultiSelect,
   Divider,
+  LoadingOverlay,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
 import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
-
-// Types for workout plans
-// @ts-ignore
-enum WorkoutType {
-  PushAndPull1 = 'PushAndPull1',
-  PushAndPull2 = 'PushAndPull2',
-  Legs1 = 'Legs1',
-  Legs2 = 'Legs2',
-  Abs = 'Abs',
-}
-
-// @ts-ignore
-enum DayOfWeek {
-  Monday = 'Monday',
-  Tuesday = 'Tuesday',
-  Wednesday = 'Wednesday',
-  Thursday = 'Thursday',
-  Friday = 'Friday',
-  Saturday = 'Saturday',
-  Sunday = 'Sunday',
-}
-
-interface Exercise {
-  id: string;
-  name: string;
-  categoryId: string;
-}
-
-interface WorkoutPlan {
-  id: string;
-  type: WorkoutType;
-  day: DayOfWeek;
-  description: string;
-  exerciseIds: string[];
-}
-
-// Form values for workout plan creation/editing
-interface WorkoutPlanFormValues {
-  type: WorkoutType;
-  day: DayOfWeek;
-  description: string;
-  exerciseIds: string[];
-}
+import { notifications } from '@mantine/notifications';
+import {
+  IGetExerciseDto,
+  IGetWorkoutPlanDto,
+  ICreateWorkoutPlanDto,
+  IUpdateWorkoutPlanDto,
+  GetWorkoutPlanDtoType,
+  CreateWorkoutPlanDtoDay,
+  CreateWorkoutPlanDtoType,
+  UpdateWorkoutPlanDtoType,
+  UpdateWorkoutPlanDtoDay,
+  GetWorkoutPlanDtoDay,
+} from '@clients';
+import { useGetAllExercises } from '@hooks/requests/exerciseRequests';
+import {
+  useGetAllWorkoutPlans,
+  useDeleteWorkoutPlan,
+  usePostWorkoutPlan,
+  usePutWorkoutPlan,
+} from '@hooks/requests/workoutPlanRequests';
 
 export function WorkoutPlanPage() {
-  // Mock data for exercises
-  const exercises: Exercise[] = [
-    { id: '1', name: 'Bench Press', categoryId: '1' },
-    { id: '2', name: 'Deadlift', categoryId: '2' },
-    { id: '3', name: 'Squat', categoryId: '3' },
-    { id: '4', name: 'Pull-ups', categoryId: '2' },
-    { id: '5', name: 'Push-ups', categoryId: '1' },
-    { id: '6', name: 'Leg Press', categoryId: '3' },
-    { id: '7', name: 'Bicep Curls', categoryId: '4' },
-    { id: '8', name: 'Tricep Extensions', categoryId: '4' },
-    { id: '9', name: 'Shoulder Press', categoryId: '5' },
-    { id: '10', name: 'Crunches', categoryId: '6' },
-    { id: '11', name: 'Planks', categoryId: '6' },
-    { id: '12', name: 'Russian Twists', categoryId: '6' },
-  ];
+  // State for exercises
+  const [exercises, setExercises] = useState<IGetExerciseDto[]>([]);
+  const [exercisesLoading, setExercisesLoading] = useState(false);
+  const [exercisesError, setExercisesError] = useState<string | null>(null);
 
-  // Mock data for workout plans
-  const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([
-    {
-      id: '1',
-      type: WorkoutType.PushAndPull1,
-      day: DayOfWeek.Monday,
-      description: 'Focus on chest and back with heavy weights',
-      exerciseIds: ['1', '2', '4', '5'],
-    },
-    {
-      id: '2',
-      type: WorkoutType.Legs1,
-      day: DayOfWeek.Wednesday,
-      description: 'Leg day with emphasis on squats',
-      exerciseIds: ['3', '6'],
-    },
-    {
-      id: '3',
-      type: WorkoutType.PushAndPull2,
-      day: DayOfWeek.Friday,
-      description: 'Focus on shoulders and arms',
-      exerciseIds: ['7', '8', '9'],
-    },
-    {
-      id: '4',
-      type: WorkoutType.Abs,
-      day: DayOfWeek.Saturday,
-      description: 'Core workout',
-      exerciseIds: ['10', '11', '12'],
-    },
-  ]);
+  // State for workout plans
+  const [workoutPlans, setWorkoutPlans] = useState<IGetWorkoutPlanDto[]>([]);
+  const [workoutPlansLoading, setWorkoutPlansLoading] = useState(false);
+  const [workoutPlansError, setWorkoutPlansError] = useState<string | null>(
+    null,
+  );
 
-  const [activeTab, setActiveTab] = useState<string | null>('all');
-  const [editingPlan, setEditingPlan] = useState<WorkoutPlan | null>(null);
+  // API hooks
+  const [getAllExercises] = useGetAllExercises();
+  const [getAllWorkoutPlans] = useGetAllWorkoutPlans();
+  const [deleteWorkoutPlan] = useDeleteWorkoutPlan();
+  const [createWorkoutPlan] = usePostWorkoutPlan();
+  const [updateWorkoutPlan] = usePutWorkoutPlan();
+
+  // Fetch all exercises
+  const fetchExercises = useCallback(async () => {
+    setExercisesLoading(true);
+    setExercisesError(null);
+    try {
+      const response = await getAllExercises();
+      if (response?.data) {
+        setExercises(response.data);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to fetch exercises';
+      setExercisesError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+      });
+    } finally {
+      setExercisesLoading(false);
+    }
+  }, []);
+
+  // Fetch all workout plans
+  const fetchWorkoutPlans = useCallback(async () => {
+    setWorkoutPlansLoading(true);
+    setWorkoutPlansError(null);
+    try {
+      const response = await getAllWorkoutPlans();
+      if (response?.data) {
+        setWorkoutPlans(response.data);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch workout plans';
+      setWorkoutPlansError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+      });
+    } finally {
+      setWorkoutPlansLoading(false);
+    }
+  }, []);
+
+  // Fetch exercises and workout plans when component mounts
+  useEffect(() => {
+    fetchExercises();
+    fetchWorkoutPlans();
+  }, []);
+
+  const [editingPlan, setEditingPlan] = useState<IGetWorkoutPlanDto | null>(
+    null,
+  );
   const [opened, { open, close }] = useDisclosure(false);
 
-  const form = useForm<WorkoutPlanFormValues>({
-    initialValues: {
-      type: WorkoutType.PushAndPull1,
-      day: DayOfWeek.Monday,
-      description: '',
-      exerciseIds: [],
-    },
+  const form = useForm<ICreateWorkoutPlanDto>({
     validate: {
       description: (value) => {
-        return value.trim().length === 0 ? 'Description is required' : null;
+        return value?.trim().length === 0 ? 'Description is required' : null;
       },
       exerciseIds: (value) => {
-        return value.length === 0 ? 'At least one exercise is required' : null;
+        return value?.length === 0 ? 'At least one exercise is required' : null;
       },
     },
   });
 
-  const handleOpenModal = (plan?: WorkoutPlan) => {
-    if (plan) {
-      setEditingPlan(plan);
-      form.setValues({
-        type: plan.type,
-        day: plan.day,
-        description: plan.description,
-        exerciseIds: plan.exerciseIds,
+  const handleOpenModal = useCallback(
+    (plan?: IGetWorkoutPlanDto) => {
+      if (plan) {
+        setEditingPlan(plan);
+        // @ts-ignore
+
+        form.setValues({
+          // @ts-ignore
+          type: plan.type as GetWorkoutPlanDtoType,
+          // @ts-ignore
+          day: plan.day as unknown as GetWorkoutPlanDtoDay,
+          description: plan.description || '',
+          exerciseIds:
+            plan.exercises?.map((ex) => {
+              return ex.id || '';
+            }) || [],
+        });
+      } else {
+        setEditingPlan(null);
+        form.reset();
+      }
+      open();
+    },
+    [form],
+  );
+
+  const handleSubmit = useCallback(async (values: IUpdateWorkoutPlanDto) => {
+    try {
+      if (editingPlan) {
+        // Update existing plan
+        const updateData: IUpdateWorkoutPlanDto = {
+          id: editingPlan.id!,
+          type: values.type as unknown as UpdateWorkoutPlanDtoType,
+          day: values.day as unknown as UpdateWorkoutPlanDtoDay,
+          description: values.description,
+          exerciseIds: values.exerciseIds,
+        };
+
+        await updateWorkoutPlan(updateData);
+
+        notifications.show({
+          title: 'Success',
+          message: 'Workout plan updated successfully',
+          color: 'green',
+        });
+      } else {
+        // Create new plan
+        const createData: ICreateWorkoutPlanDto = {
+          type: values.type as unknown as CreateWorkoutPlanDtoType,
+          day: values.day as unknown as CreateWorkoutPlanDtoDay,
+          description: values.description,
+          exerciseIds: values.exerciseIds,
+        };
+
+        await createWorkoutPlan(createData);
+
+        notifications.show({
+          title: 'Success',
+          message: 'Workout plan created successfully',
+          color: 'green',
+        });
+      }
+
+      // After successful creation/update, fetch all workout plans to get the updated list
+      fetchWorkoutPlans();
+      close();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to save workout plan';
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
       });
-    } else {
-      setEditingPlan(null);
-      form.reset();
     }
-    open();
-  };
+  }, []);
 
-  const handleSubmit = (values: WorkoutPlanFormValues) => {
-    const newPlan: WorkoutPlan = {
-      id: editingPlan ? editingPlan.id : Date.now().toString(),
-      ...values,
-    };
+  const handleDeletePlan = useCallback(async (id: string) => {
+    try {
+      // Call API to delete the workout plan
+      await deleteWorkoutPlan(id);
 
-    if (editingPlan) {
-      // Update existing plan
-      setWorkoutPlans(
-        workoutPlans.map((plan) => {
-          return plan.id === editingPlan.id ? newPlan : plan;
-        }),
-      );
-    } else {
-      // Add new plan
-      setWorkoutPlans([...workoutPlans, newPlan]);
+      // After successful deletion, fetch all workout plans to get the updated list
+      fetchWorkoutPlans();
+
+      notifications.show({
+        title: 'Success',
+        message: 'Workout plan deleted successfully',
+        color: 'green',
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to delete workout plan';
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+      });
     }
-
-    close();
-  };
-
-  const handleDeletePlan = (id: string) => {
-    setWorkoutPlans(
-      workoutPlans.filter((plan) => {
-        return plan.id !== id;
-      }),
-    );
-  };
-
-  const getExerciseName = (id: string) => {
-    const exercise = exercises.find((ex) => {
-      return ex.id === id;
-    });
-    return exercise ? exercise.name : 'Unknown Exercise';
-  };
-
-  const getFilteredPlans = () => {
-    if (activeTab === 'all') return workoutPlans;
-    return workoutPlans.filter((plan) => {
-      return plan.type === activeTab;
-    });
-  };
+  }, []);
 
   const workoutTypeOptions = [
-    { value: WorkoutType.PushAndPull1, label: 'Push and Pull 1' },
-    { value: WorkoutType.PushAndPull2, label: 'Push and Pull 2' },
-    { value: WorkoutType.Legs1, label: 'Legs 1' },
-    { value: WorkoutType.Legs2, label: 'Legs 2' },
-    { value: WorkoutType.Abs, label: 'Abs' },
+    {
+      value: GetWorkoutPlanDtoType.PUSH_AND_PULL_1,
+      label: 'Push and Pull 1',
+    },
+    {
+      value: GetWorkoutPlanDtoType.PUSH_AND_PULL_2,
+      label: 'Push and Pull 2',
+    },
+    {
+      value: GetWorkoutPlanDtoType.LEGS_1,
+      label: 'Legs 1',
+    },
+    {
+      value: GetWorkoutPlanDtoType.LEGS_2,
+      label: 'Legs 2',
+    },
+    { value: GetWorkoutPlanDtoType.ABS, label: 'Abs' },
   ];
 
   const dayOptions = [
-    { value: DayOfWeek.Monday, label: 'Monday' },
-    { value: DayOfWeek.Tuesday, label: 'Tuesday' },
-    { value: DayOfWeek.Wednesday, label: 'Wednesday' },
-    { value: DayOfWeek.Thursday, label: 'Thursday' },
-    { value: DayOfWeek.Friday, label: 'Friday' },
-    { value: DayOfWeek.Saturday, label: 'Saturday' },
-    { value: DayOfWeek.Sunday, label: 'Sunday' },
+    { value: CreateWorkoutPlanDtoDay.MONDAY, label: 'Monday' },
+    { value: CreateWorkoutPlanDtoDay.TUESDAY, label: 'Tuesday' },
+    { value: CreateWorkoutPlanDtoDay.WEDNESDAY, label: 'Wednesday' },
+    { value: CreateWorkoutPlanDtoDay.THURSDAY, label: 'Thursday' },
+    { value: CreateWorkoutPlanDtoDay.FRIDAY, label: 'Friday' },
+    { value: CreateWorkoutPlanDtoDay.SATURDAY, label: 'Saturday' },
+    { value: CreateWorkoutPlanDtoDay.SUNDAY, label: 'Sunday' },
   ];
 
-  const exerciseOptions = exercises.map((exercise) => {
-    return {
-      value: exercise.id,
-      label: exercise.name,
-    };
-  });
+  const exerciseOptions = useMemo(() => {
+    return exercises.map((exercise) => {
+      return {
+        value: exercise.id!,
+        label: exercise.name!,
+      };
+    });
+  }, [exercises]);
 
+  // @ts-ignore
+  // @ts-ignore
   return (
     <Container size="lg" py="xl">
-      <Paper shadow="md" p="xl" radius="md" withBorder>
+      <Paper shadow="md" p="xl" radius="md" withBorder pos="relative">
+        <LoadingOverlay visible={exercisesLoading || workoutPlansLoading} />
         <Group justify="space-between" mb="xl">
           <Title order={1}>Workout Plans</Title>
           <Button
@@ -232,98 +290,109 @@ export function WorkoutPlanPage() {
           </Button>
         </Group>
 
-        <Tabs value={activeTab} onChange={setActiveTab} mb="xl">
-          <Tabs.List>
-            <Tabs.Tab value="all">All Plans</Tabs.Tab>
-            <Tabs.Tab value={WorkoutType.PushAndPull1}>
-              Push and Pull 1
-            </Tabs.Tab>
-            <Tabs.Tab value={WorkoutType.PushAndPull2}>
-              Push and Pull 2
-            </Tabs.Tab>
-            <Tabs.Tab value={WorkoutType.Legs1}>Legs 1</Tabs.Tab>
-            <Tabs.Tab value={WorkoutType.Legs2}>Legs 2</Tabs.Tab>
-            <Tabs.Tab value={WorkoutType.Abs}>Abs</Tabs.Tab>
-          </Tabs.List>
-        </Tabs>
-
-        {getFilteredPlans().length === 0 ? (
-          <Text c="dimmed" ta="center">
-            No workout plans found.
-          </Text>
-        ) : (
-          <Stack gap="md">
-            {getFilteredPlans().map((plan) => {
-              return (
-                <Card key={plan.id} withBorder shadow="sm" padding="md">
-                  <Group justify="space-between">
-                    <div>
-                      <Title order={3}>
-                        {
-                          workoutTypeOptions.find((opt) => {
-                            return opt.value === plan.type;
-                          })?.label
-                        }
-                      </Title>
-                      <Text size="sm" c="dimmed">
-                        Day: {plan.day}
-                      </Text>
-                    </div>
-                    <Group>
-                      <ActionIcon
-                        variant="subtle"
-                        color="blue"
-                        onClick={() => {
-                          return handleOpenModal(plan);
-                        }}
-                      >
-                        <IconEdit size="1rem" />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={() => {
-                          return handleDeletePlan(plan.id);
-                        }}
-                      >
-                        <IconTrash size="1rem" />
-                      </ActionIcon>
-                    </Group>
-                  </Group>
-
-                  <Text mt="xs">{plan.description}</Text>
-
-                  <Divider my="sm" />
-
-                  <Title order={4} mb="xs">
-                    Exercises
-                  </Title>
-                  <Stack gap="xs">
-                    {plan.exerciseIds.map((exId) => {
-                      return <Text key={exId}>• {getExerciseName(exId)}</Text>;
-                    })}
-                  </Stack>
-                </Card>
-              );
-            })}
-          </Stack>
+        {exercisesError && (
+          <Paper shadow="md" p="md" radius="md" withBorder mb="md" bg="red.1">
+            <Text c="red">{exercisesError}</Text>
+          </Paper>
         )}
+
+        {workoutPlansError && (
+          <Paper shadow="md" p="md" radius="md" withBorder mb="md" bg="red.1">
+            <Text c="red">{workoutPlansError}</Text>
+          </Paper>
+        )}
+
+        <Title order={2} mb="md">
+          All Plans
+        </Title>
+
+        {useMemo(() => {
+          return workoutPlans.length === 0 ? (
+            <Text c="dimmed" ta="center">
+              {workoutPlansLoading
+                ? 'Loading workout plans...'
+                : 'No workout plans found.'}
+            </Text>
+          ) : (
+            <Stack gap="md">
+              {workoutPlans.map((plan) => {
+                return (
+                  <Card key={plan.id} withBorder shadow="sm" padding="md">
+                    <Group justify="space-between">
+                      <div>
+                        <Title order={3}>
+                          {workoutTypeOptions.find((opt) => {
+                            return opt.value === plan.type;
+                          })?.label || plan.type}
+                        </Title>
+                        <Text size="sm" c="dimmed">
+                          Day: {plan.day}
+                        </Text>
+                      </div>
+                      <Group>
+                        <ActionIcon
+                          variant="subtle"
+                          color="blue"
+                          onClick={() => {
+                            return handleOpenModal(plan);
+                          }}
+                        >
+                          <IconEdit size="1rem" />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={() => {
+                            return handleDeletePlan(plan.id || '');
+                          }}
+                        >
+                          <IconTrash size="1rem" />
+                        </ActionIcon>
+                      </Group>
+                    </Group>
+
+                    <Text mt="xs">{plan.description}</Text>
+
+                    <Divider my="sm" />
+
+                    <Title order={4} mb="xs">
+                      Exercises
+                    </Title>
+                    <Stack gap="xs">
+                      {plan.exercises &&
+                        plan.exercises.map((exercise) => {
+                          return (
+                            <Text key={exercise.id}>• {exercise.name}</Text>
+                          );
+                        })}
+                    </Stack>
+                  </Card>
+                );
+              })}
+            </Stack>
+          );
+        }, [workoutPlans])}
       </Paper>
 
-      <Modal
+      <Drawer
         opened={opened}
         onClose={close}
         title={editingPlan ? 'Edit Workout Plan' : 'Add New Workout Plan'}
-        centered
         size="lg"
       >
-        <form onSubmit={form.onSubmit(handleSubmit)}>
+        <form
+          onSubmit={
+            // @ts-ignore
+            form.onSubmit(handleSubmit)
+          }
+        >
           <Stack>
             <Select
               label="Workout Type"
               placeholder="Select workout type"
               data={workoutTypeOptions}
               required
+              key={form.key('type')}
               {...form.getInputProps('type')}
             />
 
@@ -348,8 +417,15 @@ export function WorkoutPlanPage() {
               data={exerciseOptions}
               required
               searchable
+              //loading={exercisesLoading}
               {...form.getInputProps('exerciseIds')}
             />
+
+            {exercisesError && (
+              <Text size="sm" c="red">
+                Error loading exercises: {exercisesError}
+              </Text>
+            )}
 
             <Group justify="flex-end" mt="md">
               <Button variant="subtle" onClick={close}>
@@ -359,7 +435,7 @@ export function WorkoutPlanPage() {
             </Group>
           </Stack>
         </form>
-      </Modal>
+      </Drawer>
     </Container>
   );
 }
