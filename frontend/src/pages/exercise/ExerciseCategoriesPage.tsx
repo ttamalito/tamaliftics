@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Container,
   Title,
@@ -9,52 +9,44 @@ import {
   Stack,
   Card,
   ActionIcon,
-  Modal,
+  Drawer,
   TextInput,
   Textarea,
+  LoadingOverlay,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
 import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
-
-// Types for exercise categories
-interface ExerciseCategory {
-  id: string;
-  name: string;
-  description: string;
-}
-
-// Form values for category creation/editing
-interface CategoryFormValues {
-  name: string;
-  description: string;
-}
+import { notifications } from '@mantine/notifications';
+import {
+  ICreateExerciseCategoryDto,
+  IUpdateExerciseCategoryDto,
+  IGetExerciseCategoryDto,
+} from '@clients';
+import {
+  usePostExerciseCategory,
+  usePutExerciseCategory,
+  useGetAllExerciseCategories,
+  useDeleteExerciseCategory,
+} from '@hooks/requests/exerciseCategoryRequests';
 
 export function ExerciseCategoriesPage() {
-  // Mock data for exercise categories
-  const [categories, setCategories] = useState<ExerciseCategory[]>([
-    {
-      id: '1',
-      name: 'Chest',
-      description: 'Exercises targeting chest muscles',
-    },
-    { id: '2', name: 'Back', description: 'Exercises targeting back muscles' },
-    { id: '3', name: 'Legs', description: 'Exercises targeting leg muscles' },
-    { id: '4', name: 'Arms', description: 'Exercises targeting arm muscles' },
-    {
-      id: '5',
-      name: 'Shoulders',
-      description: 'Exercises targeting shoulder muscles',
-    },
-    { id: '6', name: 'Core', description: 'Exercises targeting core muscles' },
-    { id: '7', name: 'Cardio', description: 'Cardiovascular exercises' },
-  ]);
-
+  // State for exercise categories
+  const [categories, setCategories] = useState<IGetExerciseCategoryDto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] =
-    useState<ExerciseCategory | null>(null);
+    useState<IGetExerciseCategoryDto | null>(null);
   const [opened, { open, close }] = useDisclosure(false);
 
-  const form = useForm<CategoryFormValues>({
+  // API hooks
+  const [createExerciseCategory] = usePostExerciseCategory();
+  const [updateExerciseCategory] = usePutExerciseCategory();
+  const [getAllExerciseCategories] = useGetAllExerciseCategories();
+  const [deleteExerciseCategory] = useDeleteExerciseCategory();
+
+  // Form for adding/editing categories
+  const form = useForm<ICreateExerciseCategoryDto>({
     initialValues: {
       name: '',
       description: '',
@@ -66,52 +58,200 @@ export function ExerciseCategoriesPage() {
     },
   });
 
-  const handleOpenModal = (category?: ExerciseCategory) => {
-    if (category) {
-      setEditingCategory(category);
-      form.setValues({
-        name: category.name,
-        description: category.description,
+  // Fetch all categories on component mount
+  useEffect(() => {
+    fetchAllCategories();
+  }, []);
+
+  // Fetch all categories
+  const fetchAllCategories = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getAllExerciseCategories();
+      if (response?.data) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch exercise categories';
+      setError(errorMessage);
+      notifications.show({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
       });
-    } else {
-      setEditingCategory(null);
-      form.reset();
+    } finally {
+      setLoading(false);
     }
-    open();
-  };
+  }, [getAllExerciseCategories]);
 
-  const handleSubmit = (values: CategoryFormValues) => {
-    const newCategory: ExerciseCategory = {
-      id: editingCategory ? editingCategory.id : Date.now().toString(),
-      ...values,
-    };
+  // Handle opening the modal for adding/editing
+  const handleOpenModal = useCallback(
+    (category?: IGetExerciseCategoryDto) => {
+      if (category) {
+        setEditingCategory(category);
+        form.setValues({
+          name: category.name || '',
+          description: category.description || '',
+        });
+      } else {
+        setEditingCategory(null);
+        form.reset();
+      }
+      open();
+    },
+    [form, open],
+  );
 
-    if (editingCategory) {
-      // Update existing category
-      setCategories(
-        categories.map((cat) => {
-          return cat.id === editingCategory.id ? newCategory : cat;
-        }),
-      );
-    } else {
-      // Add new category
-      setCategories([...categories, newCategory]);
-    }
+  // Handle form submission (create or update)
+  const handleSubmit = useCallback(
+    async (values: ICreateExerciseCategoryDto) => {
+      setLoading(true);
+      setError(null);
+      try {
+        let response;
 
-    close();
-  };
+        if (editingCategory) {
+          // Update existing category
+          const updateData: IUpdateExerciseCategoryDto = {
+            id: editingCategory.id!,
+            ...values,
+          };
+          response = await updateExerciseCategory(updateData);
 
-  const handleDeleteCategory = (id: string) => {
-    setCategories(
-      categories.filter((cat) => {
-        return cat.id !== id;
-      }),
+          if (response?.data) {
+            notifications.show({
+              title: 'Success',
+              message: 'Exercise category updated successfully',
+              color: 'green',
+            });
+          }
+        } else {
+          // Create new category
+          response = await createExerciseCategory(values);
+
+          if (response?.data) {
+            notifications.show({
+              title: 'Success',
+              message: 'Exercise category created successfully',
+              color: 'green',
+            });
+          }
+        }
+
+        // Reset form and editing state
+        form.reset();
+        setEditingCategory(null);
+        close();
+
+        // Refresh data
+        fetchAllCategories();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to save exercise category';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      editingCategory,
+      form,
+      close,
+      createExerciseCategory,
+      updateExerciseCategory,
+      fetchAllCategories,
+    ],
+  );
+
+  // Handle deleting a category
+  const handleDeleteCategory = useCallback(
+    async (id: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await deleteExerciseCategory(id);
+        if (response) {
+          notifications.show({
+            title: 'Success',
+            message: 'Exercise category deleted successfully',
+            color: 'green',
+          });
+          // Refresh data
+          fetchAllCategories();
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to delete exercise category';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [deleteExerciseCategory, fetchAllCategories],
+  );
+
+  // Memoize the categories list
+  const categoriesList = useMemo(() => {
+    return (
+      <Stack gap="md">
+        {categories.map((category) => {
+          return (
+            <Card key={category.id} withBorder shadow="sm" padding="md">
+              <Group justify="space-between">
+                <Title order={3}>{category.name}</Title>
+                <Group>
+                  <ActionIcon
+                    variant="subtle"
+                    color="blue"
+                    onClick={() => {
+                      return handleOpenModal(category);
+                    }}
+                    aria-label="Edit category"
+                  >
+                    <IconEdit size="1rem" />
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    onClick={() => {
+                      return handleDeleteCategory(category.id!);
+                    }}
+                    aria-label="Delete category"
+                  >
+                    <IconTrash size="1rem" />
+                  </ActionIcon>
+                </Group>
+              </Group>
+              <Text mt="xs">{category.description}</Text>
+            </Card>
+          );
+        })}
+      </Stack>
     );
-  };
+  }, [categories, handleOpenModal, handleDeleteCategory]);
 
   return (
     <Container size="lg" py="xl">
-      <Paper shadow="md" p="xl" radius="md" withBorder>
+      <Paper shadow="md" p="xl" radius="md" withBorder pos="relative">
+        <LoadingOverlay visible={loading} />
         <Group justify="space-between" mb="xl">
           <Title order={1}>Exercise Categories</Title>
           <Button
@@ -129,46 +269,20 @@ export function ExerciseCategoriesPage() {
             No exercise categories added yet.
           </Text>
         ) : (
-          <Stack gap="md">
-            {categories.map((category) => {
-              return (
-                <Card key={category.id} withBorder shadow="sm" padding="md">
-                  <Group justify="space-between">
-                    <Title order={3}>{category.name}</Title>
-                    <Group>
-                      <ActionIcon
-                        variant="subtle"
-                        color="blue"
-                        onClick={() => {
-                          return handleOpenModal(category);
-                        }}
-                      >
-                        <IconEdit size="1rem" />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={() => {
-                          return handleDeleteCategory(category.id);
-                        }}
-                      >
-                        <IconTrash size="1rem" />
-                      </ActionIcon>
-                    </Group>
-                  </Group>
-                  <Text mt="xs">{category.description}</Text>
-                </Card>
-              );
-            })}
-          </Stack>
+          categoriesList
+        )}
+
+        {error && (
+          <Paper shadow="md" p="md" radius="md" withBorder mt="md" bg="red.1">
+            <Text c="red">{error}</Text>
+          </Paper>
         )}
       </Paper>
 
-      <Modal
+      <Drawer
         opened={opened}
         onClose={close}
         title={editingCategory ? 'Edit Category' : 'Add New Category'}
-        centered
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack>
@@ -195,7 +309,7 @@ export function ExerciseCategoriesPage() {
             </Group>
           </Stack>
         </form>
-      </Modal>
+      </Drawer>
     </Container>
   );
 }
