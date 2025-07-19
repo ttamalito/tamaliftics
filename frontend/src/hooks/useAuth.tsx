@@ -52,12 +52,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     async (loginModel: ILoginRequestDto) => {
       try {
         const response = await loginRequest(loginModel);
-        if (response?.status === 200) {
-          const token: string = response.data.accessToken;
-          setToken(token);
-          const destination: string = location.state?.from || routes.HOME;
-          return Promise.resolve(destination);
-        }
+        const token: string = response?.data.accessToken;
+        setToken(token);
+        const destination: string = location.state?.from || routes.HOME;
+        return Promise.resolve(destination);
       } catch (error: any) {
         if (error.response?.status === 401) {
           return Promise.reject(error.response.data.result.response.message);

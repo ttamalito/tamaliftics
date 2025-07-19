@@ -1,5 +1,4 @@
 import { useState } from 'react';
-//import { useAuth } from '../../hooks/useAuth';
 import { Link } from 'react-router';
 import { routes } from '@routes';
 import {
@@ -17,37 +16,25 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconLock, IconUser, IconMail } from '@tabler/icons-react';
-
-interface SignupFormValues {
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  firstName?: string;
-  lastName?: string;
-}
+import { ISignupRequestDto } from '@clients';
+import { usePostSignup } from '@requests/authRequests.ts';
+import { notifications } from '@mantine/notifications';
 
 export function SignupPage() {
   const [error, setError] = useState<string | null>(null);
+  const [signup] = usePostSignup();
+  // const [login] = usePostLogin();
 
-  const form = useForm<SignupFormValues>({
-    initialValues: {
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      firstName: '',
-      lastName: '',
-    },
+  const form = useForm<ISignupRequestDto>({
     validate: {
       username: (value) => {
-        return value.trim().length === 0 ? 'Username is required' : null;
+        return value?.trim().length === 0 ? 'Username is required' : null;
       },
       email: (value) => {
-        return /^\S+@\S+$/.test(value) ? null : 'Invalid email';
+        return /^\S+@\S+$/.test(value ?? '') ? null : 'Invalid email';
       },
       password: (value) => {
-        return value.length < 6
+        return value && value.length < 6
           ? 'Password must be at least 6 characters'
           : null;
       },
@@ -57,10 +44,21 @@ export function SignupPage() {
     },
   });
 
-  const handleSubmit = (values: SignupFormValues) => {
+  const handleSubmit = (values: ISignupRequestDto) => {
     setError(null);
     try {
       console.log(values);
+      signup(values)
+        .then(() => {
+          notifications.show({
+            title: 'Success',
+            message: 'Account created successfully',
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          setError(err.message);
+        });
     } catch (error) {
       setError('Username or email already exists' + error);
     }
@@ -81,6 +79,7 @@ export function SignupPage() {
               placeholder="Your username"
               leftSection={<IconUser size="1rem" />}
               required
+              key={form.key('username')}
               {...form.getInputProps('username')}
             />
 
@@ -89,6 +88,7 @@ export function SignupPage() {
               placeholder="Your email"
               leftSection={<IconMail size="1rem" />}
               required
+              key={form.key('email')}
               {...form.getInputProps('email')}
             />
 
@@ -97,27 +97,31 @@ export function SignupPage() {
               placeholder="Your password"
               leftSection={<IconLock size="1rem" />}
               required
+              key={form.key('password')}
               {...form.getInputProps('password')}
             />
 
-            <PasswordInput
-              label="Confirm Password"
-              placeholder="Confirm your password"
-              leftSection={<IconLock size="1rem" />}
-              required
-              {...form.getInputProps('confirmPassword')}
-            />
+            {/*<PasswordInput*/}
+            {/*  label="Confirm Password"*/}
+            {/*  placeholder="Confirm your password"*/}
+            {/*  leftSection={<IconLock size="1rem" />}*/}
+            {/*  required*/}
+            {/*  key={form.key('')}*/}
+            {/*  {...form.getInputProps('confirmPassword')}*/}
+            {/*/>*/}
 
             <Group grow>
               <TextInput
                 label="First Name"
                 placeholder="Your first name"
+                key={form.key('firstName')}
                 {...form.getInputProps('firstName')}
               />
 
               <TextInput
                 label="Last Name"
                 placeholder="Your last name"
+                key={form.key('lastName')}
                 {...form.getInputProps('lastName')}
               />
             </Group>

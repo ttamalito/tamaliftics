@@ -9,25 +9,28 @@ import { ExerciseCategoriesPage } from './pages/exercise/ExerciseCategoriesPage'
 import { ExercisesPage } from './pages/exercise/ExercisesPage';
 import { WorkoutPlanPage } from './pages/workout/WorkoutPlanPage';
 import { routes } from '@routes';
+import { AuthProvider } from '@hooks/useAuth.tsx';
 
 function App() {
   return (
-    <Routes>
-      <Route path={routes.LOGIN} element={<LoginPage />} />
-      <Route path={routes.SIGNUP} element={<SignupPage />} />
+    <AuthProvider>
+      <Routes>
+        <Route path={routes.LOGIN} element={<LoginPage />} />
+        <Route path={routes.SIGNUP} element={<SignupPage />} />
 
-      <Route element={<AppLayout />}>
-        <Route path={routes.HOME} element={<HomePage />} />
-        <Route path={routes.DIET} element={<DietPage />} />
-        <Route path={routes.WEIGHT} element={<WeightPage />} />
-        <Route
-          path={routes.EXERCISE_CATEGORIES}
-          element={<ExerciseCategoriesPage />}
-        />
-        <Route path={routes.EXERCISES} element={<ExercisesPage />} />
-        <Route path={routes.WORKOUT_PLAN} element={<WorkoutPlanPage />} />
-      </Route>
-    </Routes>
+        <Route element={<AppLayout />}>
+          <Route path={routes.HOME} element={<HomePage />} />
+          <Route path={routes.DIET} element={<DietPage />} />
+          <Route path={routes.WEIGHT} element={<WeightPage />} />
+          <Route
+            path={routes.EXERCISE_CATEGORIES}
+            element={<ExerciseCategoriesPage />}
+          />
+          <Route path={routes.EXERCISES} element={<ExercisesPage />} />
+          <Route path={routes.WORKOUT_PLAN} element={<WorkoutPlanPage />} />
+        </Route>
+      </Routes>
+    </AuthProvider>
   );
 }
 

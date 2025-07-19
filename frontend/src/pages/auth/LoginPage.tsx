@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { routes } from '@routes';
 import {
   TextInput,
@@ -16,35 +16,47 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAt, IconLock } from '@tabler/icons-react';
-
-interface LoginFormValues {
-  username: string;
-  password: string;
-}
+//import { usePostLogin } from '@requests/authRequests.ts';
+import { ILoginRequestDto } from '@clients';
+import { useAuth } from '@hooks/useAuth.tsx';
+import { notifications } from '@mantine/notifications';
 
 export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
+  // const [login] = usePostLogin();
+  const { onLogin } = useAuth();
+  const navigate = useNavigate();
 
-  const form = useForm<LoginFormValues>({
-    initialValues: {
-      username: '',
-      password: '',
-    },
-    validate: {
-      username: (value) => {
-        return value.trim().length === 0 ? 'Username is required' : null;
-      },
-      password: (value) => {
-        return value.length === 0 ? 'Password is required' : null;
-      },
-    },
+  const form = useForm<ILoginRequestDto>({
+    // validate: {
+    //   username: (value) => {
+    //     return value.trim().length === 0 ? 'Username is required' : null;
+    //   },
+    //   password: (value) => {
+    //     return value.length === 0 ? 'Password is required' : null;
+    //   },
+    // },
   });
 
-  const handleSubmit = (values: LoginFormValues) => {
+  const handleSubmit = (values: ILoginRequestDto) => {
     console.log(values);
     setError(null);
     try {
-      //await login(values.username, values.password);
+      onLogin({
+        username: values.username,
+        password: values.password,
+      })
+        .then((response) => {
+          navigate(response ?? routes.HOME, { replace: true });
+          notifications.show({
+            color: 'green',
+            title: 'Success',
+            message: 'Logged in successfully',
+          });
+        })
+        .catch((err) => {
+          console.error(err);
+        });
     } catch (error) {
       setError('Invalid username or password' + error);
     }
@@ -65,6 +77,7 @@ export function LoginPage() {
               placeholder="Your username"
               leftSection={<IconAt size="1rem" />}
               required
+              key={form.key('username')}
               {...form.getInputProps('username')}
             />
 
@@ -73,6 +86,7 @@ export function LoginPage() {
               placeholder="Your password"
               leftSection={<IconLock size="1rem" />}
               required
+              key={form.key('password')}
               {...form.getInputProps('password')}
             />
           </Stack>

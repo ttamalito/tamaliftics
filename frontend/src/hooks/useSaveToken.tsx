@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-const ACCESS_TOKEN_KEY = 'accesstoken';
+const ACCESS_TOKEN_KEY = 'accesstokenTamaliftics';
 
 function retrieveExistingToken() {
   try {
