@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     async (loginModel: ILoginRequestDto) => {
       try {
         const response = await loginRequest(loginModel);
-        const token: string = response?.data.accessToken;
+        const token: string = response?.data.token;
         setToken(token);
         const destination: string = location.state?.from || routes.HOME;
         return Promise.resolve(destination);

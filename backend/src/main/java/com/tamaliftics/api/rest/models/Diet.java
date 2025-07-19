@@ -23,7 +23,7 @@ public class Diet {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "diet_id")
     private List<Meal> meals = new ArrayList<>();
 

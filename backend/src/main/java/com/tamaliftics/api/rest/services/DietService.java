@@ -58,6 +58,10 @@ public class DietService {
             List<Meal> meals = mealRepository.findAllById(createDietDto.mealIds()).stream()
                     .filter(meal -> meal.getUser().getId().equals(userId))
                     .collect(Collectors.toList());
+
+            // Set the diet for each meal
+            meals.forEach(meal -> meal.setDiet(diet));
+
             diet.setMeals(meals);
         }
 
@@ -90,6 +94,10 @@ public class DietService {
             List<Meal> meals = mealRepository.findAllById(updateDietDto.mealIds()).stream()
                     .filter(meal -> meal.getUser().getId().equals(userId))
                     .collect(Collectors.toList());
+
+            // Set the diet for each meal
+            meals.forEach(meal -> meal.setDiet(diet));
+
             diet.setMeals(meals);
         }
 
@@ -163,6 +171,7 @@ public class DietService {
 
         Diet diet = dietOptional.get();
         Meal meal = mealOptional.get();
+        meal.setDiet(diet);
         diet.addMeal(meal);
 
         Diet updatedDiet = dietRepository.save(diet);
@@ -183,7 +192,21 @@ public class DietService {
         }
 
         Diet diet = dietOptional.get();
-        diet.getMeals().removeIf(meal -> meal.getId().equals(mealId));
+
+        // Find the meal to remove
+        Optional<Meal> mealToRemoveOpt = diet.getMeals().stream()
+                .filter(meal -> meal.getId().equals(mealId))
+                .findFirst();
+
+        if (mealToRemoveOpt.isPresent()) {
+            Meal mealToRemove = mealToRemoveOpt.get();
+            // Set the diet to null
+            mealToRemove.setDiet(null);
+            // Save the meal
+            mealRepository.save(mealToRemove);
+            // Remove the meal from the diet
+            diet.getMeals().remove(mealToRemove);
+        }
 
         Diet updatedDiet = dietRepository.save(diet);
         return Optional.of(mapToGetDietDto(updatedDiet));
@@ -213,11 +236,7 @@ public class DietService {
      */
     private GetDietDto mapToGetDietDto(Diet diet) {
         List<GetMealDto> mealDtos = diet.getMeals().stream()
-                .map(meal -> {
-                    Optional<GetMealDto> mealDto = mealService.getMealById(meal.getId(), diet.getUser().getId());
-                    return mealDto.orElse(null);
-                })
-                .filter(mealDto -> mealDto != null)
+                .map(meal -> mealService.mapToGetMealDto(meal))
                 .collect(Collectors.toList());
 
         return new GetDietDto(

@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
+import java.util.UUID;
+
 /**
  * DTO for creating a new dish.
  */
@@ -27,6 +29,10 @@ public record CreateDishDto(
     
     @NotNull(message = "Protein is required")
     @PositiveOrZero(message = "Protein must be positive or zero")
-    Double protein
-) {
+    Double protein,
+
+    @NotNull(message = "Meal id is required")
+    UUID mealId
+)
+{
 }

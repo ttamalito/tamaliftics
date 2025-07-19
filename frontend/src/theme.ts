@@ -62,19 +62,19 @@ const theme = createTheme({
   white: '#FAFAFA',
   black: '#1A1A1A',
   components: {
-    Modal: {
-      defaultProps: {
-        centered: true,
-        overlayProps: {
-          backgroundOpacity: 0.55,
-          blur: 3,
-        },
-        transitionProps: {
-          transition: 'fade',
-          duration: 200,
-        },
-      },
-    },
+    // Modal: {
+    //   defaultProps: {
+    //     centered: true,
+    //     overlayProps: {
+    //       backgroundOpacity: 0.55,
+    //       blur: 3,
+    //     },
+    //     transitionProps: {
+    //       transition: 'fade',
+    //       duration: 200,
+    //     },
+    //   },
+    // },
   },
 });
 

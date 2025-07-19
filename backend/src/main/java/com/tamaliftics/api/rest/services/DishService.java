@@ -1,11 +1,14 @@
 package com.tamaliftics.api.rest.services;
 
 import com.tamaliftics.api.rest.models.Dish;
+import com.tamaliftics.api.rest.models.Meal;
 import com.tamaliftics.api.rest.models.User;
 import com.tamaliftics.api.rest.models.dtos.dish.CreateDishDto;
 import com.tamaliftics.api.rest.models.dtos.dish.GetDishDto;
 import com.tamaliftics.api.rest.models.dtos.dish.UpdateDishDto;
+import com.tamaliftics.api.rest.models.dtos.meal.GetMealDto;
 import com.tamaliftics.api.rest.repositories.DishRepository;
+import com.tamaliftics.api.rest.repositories.MealRepository;
 import com.tamaliftics.api.rest.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,11 +26,13 @@ public class DishService {
 
     private final DishRepository dishRepository;
     private final UserRepository userRepository;
+    private final MealRepository mealRepository;
 
     @Autowired
-    public DishService(DishRepository dishRepository, UserRepository userRepository) {
+    public DishService(DishRepository dishRepository, UserRepository userRepository, MealRepository mealRepository) {
         this.dishRepository = dishRepository;
         this.userRepository = userRepository;
+        this.mealRepository = mealRepository;
     }
 
     /**
@@ -42,6 +47,11 @@ public class DishService {
             return Optional.empty();
         }
 
+        Optional<Meal> mealOptional = mealRepository.findById(createDishDto.mealId());
+        if (mealOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
         User user = userOptional.get();
         Dish dish = new Dish(
                 createDishDto.name(),
@@ -50,7 +60,8 @@ public class DishService {
                 createDishDto.carbs(),
                 createDishDto.fat(),
                 createDishDto.protein(),
-                user
+                user,
+                mealOptional.get()
         );
 
         Dish savedDish = dishRepository.save(dish);

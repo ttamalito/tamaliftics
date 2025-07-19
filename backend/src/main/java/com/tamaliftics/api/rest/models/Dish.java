@@ -1,6 +1,7 @@
 package com.tamaliftics.api.rest.models;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.UUID;
 
 /**
@@ -37,10 +38,14 @@ public class Dish {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "meal_id")
+    private Meal meal;
+
     public Dish() {
     }
 
-    public Dish(String name, String description, double calories, double carbs, double fat, double protein, User user) {
+    public Dish(String name, String description, double calories, double carbs, double fat, double protein, User user, Meal meal) {
         this.name = name;
         this.description = description;
         this.calories = calories;
@@ -48,6 +53,7 @@ public class Dish {
         this.fat = fat;
         this.protein = protein;
         this.user = user;
+        this.meal = meal;
     }
 
     public UUID getId() {
@@ -112,5 +118,13 @@ public class Dish {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public Meal getMeal() {
+        return meal;
+    }
+
+    public void setMeal(Meal meal) {
+        this.meal = meal;
     }
 }

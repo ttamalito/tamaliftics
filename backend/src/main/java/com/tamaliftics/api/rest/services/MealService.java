@@ -161,6 +161,7 @@ public class MealService {
 
         Meal meal = mealOptional.get();
         Dish dish = dishOptional.get();
+        dish.setMeal(meal);
         meal.addDish(dish);
 
         Meal updatedMeal = mealRepository.save(meal);
@@ -192,7 +193,7 @@ public class MealService {
      * @param meal the meal entity
      * @return the meal DTO
      */
-    private GetMealDto mapToGetMealDto(Meal meal) {
+    public GetMealDto mapToGetMealDto(Meal meal) {
         List<GetDishDto> dishDtos = meal.getDishes().stream()
                 .map(dish -> new GetDishDto(
                         dish.getId(),

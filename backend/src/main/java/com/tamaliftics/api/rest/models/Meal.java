@@ -21,17 +21,17 @@ public class Meal {
     @Column(nullable = false)
     private MealType type;
 
-    @ManyToMany
-    @JoinTable(
-        name = "meal_dishes",
-        joinColumns = @JoinColumn(name = "meal_id"),
-        inverseJoinColumns = @JoinColumn(name = "dish_id")
-    )
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JoinColumn(name = "meal_id")
     private List<Dish> dishes = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "diet_id")
+    private Diet diet;
 
     public Meal() {
     }
@@ -39,6 +39,12 @@ public class Meal {
     public Meal(MealType type, User user) {
         this.type = type;
         this.user = user;
+    }
+
+    public Meal(MealType type, User user, Diet diet) {
+        this.type = type;
+        this.user = user;
+        this.diet = diet;
     }
 
     public UUID getId() {
@@ -79,6 +85,14 @@ public class Meal {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public Diet getDiet() {
+        return diet;
+    }
+
+    public void setDiet(Diet diet) {
+        this.diet = diet;
     }
 
     /**

@@ -78,7 +78,7 @@ export function AppLayout() {
             <Menu position="bottom-end" withArrow>
               <Menu.Target>
                 <Avatar color="blue" radius="xl" style={{ cursor: 'pointer' }}>
-                  <IconUser size={rem(24)} />
+                  <IconUser size={24} />
                 </Avatar>
               </Menu.Target>
               <Menu.Dropdown>

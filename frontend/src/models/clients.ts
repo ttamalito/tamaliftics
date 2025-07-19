@@ -910,6 +910,7 @@ export class CreateDishDto implements ICreateDishDto {
     carbs!: number;
     fat!: number;
     protein!: number;
+    mealId!: string;
 
     [key: string]: any;
 
@@ -934,6 +935,7 @@ export class CreateDishDto implements ICreateDishDto {
             this.carbs = _data["carbs"];
             this.fat = _data["fat"];
             this.protein = _data["protein"];
+            this.mealId = _data["mealId"];
         }
     }
 
@@ -956,6 +958,7 @@ export class CreateDishDto implements ICreateDishDto {
         data["carbs"] = this.carbs;
         data["fat"] = this.fat;
         data["protein"] = this.protein;
+        data["mealId"] = this.mealId;
         return data;
     }
 }
@@ -967,6 +970,7 @@ export interface ICreateDishDto {
     carbs: number;
     fat: number;
     protein: number;
+    mealId: string;
 
     [key: string]: any;
 }
