@@ -69,7 +69,10 @@ public class Diet {
     }
 
     public void setMeals(List<Meal> meals) {
-        this.meals = meals;
+        this.meals.clear();
+        if (meals != null) {
+            this.meals.addAll(meals);
+        }
     }
 
     public void addMeal(Meal meal) {

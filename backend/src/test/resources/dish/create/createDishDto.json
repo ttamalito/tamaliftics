@@ -1,0 +1,8 @@
+{
+  "name": "Test Dish",
+  "description": "A test dish for integration testing",
+  "calories": 500.0,
+  "carbs": 50.0,
+  "fat": 20.0,
+  "protein": 30.0
+}

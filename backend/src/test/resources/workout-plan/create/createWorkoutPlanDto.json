@@ -1,0 +1,6 @@
+{
+  "type": "PUSH_AND_PULL_1",
+  "day": "MONDAY",
+  "description": "Test workout plan for integration testing",
+  "exerciseIds": []
+}
