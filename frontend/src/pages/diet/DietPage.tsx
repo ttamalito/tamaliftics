@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Container,
   Title,
-  Tabs,
   Paper,
   Button,
   Group,
@@ -16,6 +15,8 @@ import {
   LoadingOverlay,
   Drawer,
   Select,
+  Accordion,
+  Box,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
@@ -41,6 +42,7 @@ import {
   useGetDietById,
   usePostAddMealToDiet,
   useDeleteRemoveMealFromDiet,
+  useDeleteDiet,
 } from '@requests/dietRequests.ts';
 import {
   usePostMeal,
@@ -56,14 +58,6 @@ import {
 } from '@requests/dishRequests.ts';
 import { AxiosResponse } from 'axios';
 
-// Meal type enum to match backend
-enum MealType {
-  BREAKFAST = 'BREAKFAST',
-  LUNCH = 'LUNCH',
-  DINNER = 'DINNER',
-  SNACKS = 'SNACKS',
-}
-
 export function DietPage() {
   // State for diets and dishes
   const [diets, setDiets] = useState<IGetDietDto[]>([]);
@@ -72,25 +66,12 @@ export function DietPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<string | null>('breakfast');
   const [editingDish, setEditingDish] = useState<IGetDishDto | null>(null);
   const [editingMeal, setEditingMeal] = useState<IGetMealDto | null>(null);
-  // This is used in the renderMealSection function
-  const [, setCurrentMealType] = useState<MealType>(MealType.BREAKFAST);
-  // const [currentMealId, setCurrentMealId] = useState<string | undefined>(
-  //   undefined,
-  // );
+  const [, setCurrentMealType] = useState<GetMealDtoType>(
+    GetMealDtoType.BREAKFAST,
+  );
   const currentMealIdRef = useRef<string | undefined>(undefined);
-
-  // Memoized values
-  const dietOptions = useMemo(() => {
-    return diets.map((diet) => {
-      return {
-        value: diet.id!,
-        label: diet.name!,
-      };
-    });
-  }, [diets]);
 
   const mealTypeOptions = useMemo(() => {
     return Object.values(CreateMealDtoType).map((type) => {
@@ -126,6 +107,7 @@ export function DietPage() {
   const [updateDiet] = usePutDiet();
   const [addMealToDiet] = usePostAddMealToDiet();
   const [removeMealFromDiet] = useDeleteRemoveMealFromDiet();
+  const [deleteDiet] = useDeleteDiet();
 
   // Meal hooks
   const [createMeal] = usePostMeal();
@@ -279,7 +261,7 @@ export function DietPage() {
 
   // Handle opening dish modal
   const handleOpenDishModal = useCallback(
-    (mealType: MealType, dish?: IGetDishDto) => {
+    (mealType: GetMealDtoType, dish?: IGetDishDto) => {
       setCurrentMealType(mealType);
       if (dish) {
         setEditingDish(dish);
@@ -302,7 +284,7 @@ export function DietPage() {
 
   // Handle opening meal modal
   const handleOpenMealModal = useCallback(
-    (mealType: MealType, meal?: IGetMealDto) => {
+    (mealType: GetMealDtoType, meal?: IGetMealDto) => {
       setCurrentMealType(mealType);
       if (meal) {
         setEditingMeal(meal);
@@ -565,285 +547,257 @@ export function DietPage() {
     ],
   );
 
-  // Render dishes for a specific meal type
-  const renderMealSection = useCallback(
-    (mealType: MealType) => {
-      // Find meals of this type in the current diet
-      const mealsOfType =
-        currentDiet?.meals?.filter((meal) => {
-          // @ts-ignore
-          return meal.type === mealType;
-        }) || [];
-      let currentTabValue;
+  // Handle deleting a diet
+  const handleDeleteDiet = useCallback(
+    async (dietId: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await deleteDiet(dietId);
 
-      switch (activeTab) {
-        case 'breakfast': {
-          currentTabValue = GetMealDtoType.BREAKFAST;
-          break;
-        }
-        case 'lunch': {
-          currentTabValue = GetMealDtoType.LUNCH;
-          break;
-        }
-        case 'dinner': {
-          currentTabValue = GetMealDtoType.DINNER;
-          break;
-        }
-        case 'snacks': {
-          currentTabValue = GetMealDtoType.SNACKS;
-          break;
-        }
-        default: {
-          currentTabValue = GetMealDtoType.BREAKFAST;
-        }
+        notifications.show({
+          title: 'Success',
+          message: 'Diet deleted successfully',
+          color: 'green',
+        });
+
+        // Refresh diets after deletion
+        fetchDiets();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to delete diet';
+        setError(errorMessage);
+        notifications.show({
+          title: 'Error',
+          message: errorMessage,
+          color: 'red',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setLoading, setError, deleteDiet, fetchDiets],
+  );
+
+  // Render dishes for a specific meal
+  const renderDishes = useCallback(
+    (meal: IGetMealDto) => {
+      if (!meal.dishes || meal.dishes.length === 0) {
+        return <Text c="dimmed">No dishes added yet.</Text>;
       }
 
-      console.log('Meal Type');
-      console.log(mealType);
-      //const mealId = mealsOfType.length === 1 ? mealsOfType[0].id : undefined;
-      console.log(mealsOfType);
-      console.log('these are the meals');
-
-      console.log('Current diet');
-      console.log(currentDiet?.meals);
-
-      const mealId = currentDiet?.meals?.find((meal) => {
-        return meal.type === currentTabValue;
-      })?.id;
-      console.log('Meal ID');
-      console.log(mealId);
-      currentMealIdRef.current = mealId;
-
-      // Get all dishes from these meals
-      const mealDishes = dishes.filter((dish) => {
-        return dish.type === mealType;
-      });
-
-      const mealName = mealType.charAt(0) + mealType.slice(1).toLowerCase();
-
       return (
-        <Stack>
-          <Group justify="space-between">
-            <Title order={3}>{mealName}</Title>
-            <Group>
-              <Button
-                leftSection={<IconPlus size="1rem" />}
-                onClick={() => {
-                  return handleOpenMealModal(mealType);
-                }}
-              >
-                Add Meal
-              </Button>
-              <Button
-                leftSection={<IconPlus size="1rem" />}
-                onClick={() => {
-                  return handleOpenDishModal(mealType);
-                }}
-              >
-                Add Dish
-              </Button>
-            </Group>
-          </Group>
+        <Stack gap="md">
+          {meal.dishes.map((dish) => {
+            return (
+              <Card key={dish.id} withBorder shadow="sm" padding="md">
+                <Group justify="space-between">
+                  <Title order={4}>{dish.name}</Title>
+                  <Group>
+                    <ActionIcon
+                      variant="subtle"
+                      color="blue"
+                      onClick={() => {
+                        return handleOpenDishModal(meal.type!, dish);
+                      }}
+                    >
+                      <IconEdit size="1rem" />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      onClick={async () => {
+                        try {
+                          setLoading(true);
 
-          {/* Display meals of this type */}
-          {mealsOfType.length === 1 && (
-            <Stack gap="md">
-              {mealsOfType.map((meal) => {
-                return (
-                  <Card key={meal.id} withBorder shadow="sm" padding="md">
-                    <Group justify="space-between">
-                      <Title order={4}>
-                        {mealName} #{meal?.id?.substring(0, 4)}
-                      </Title>
-                      <Group>
-                        <ActionIcon
-                          variant="subtle"
-                          color="blue"
-                          onClick={() => {
-                            return handleOpenMealModal(mealType, meal);
-                          }}
-                        >
-                          <IconEdit size="1rem" />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          color="red"
-                          onClick={async () => {
-                            try {
-                              setLoading(true);
+                          if (meal.id) {
+                            // First remove the dish from the meal
+                            await removeDishFromMeal(meal.id, dish.id!);
+                          }
 
-                              if (currentDiet?.id) {
-                                // First remove the meal from the diet
-                                await removeMealFromDiet(
-                                  currentDiet.id,
-                                  meal.id!,
-                                );
-                              }
+                          // Then delete the dish
+                          await deleteDish(dish.id!);
 
-                              // Then delete the meal
-                              await deleteMeal(meal.id!);
+                          // Update local state
+                          setDishes((prevDishes) => {
+                            return prevDishes.filter((d) => {
+                              return d.id !== dish.id;
+                            });
+                          });
 
-                              notifications.show({
-                                title: 'Success',
-                                message: 'Meal deleted successfully',
-                                color: 'green',
-                              });
+                          notifications.show({
+                            title: 'Success',
+                            message: 'Dish deleted successfully',
+                            color: 'green',
+                          });
 
-                              // Refresh the diet details
-                              if (currentDiet?.id) {
-                                fetchDietDetails(currentDiet.id);
-                              }
-                            } catch (error) {
-                              const errorMessage =
-                                error instanceof Error
-                                  ? error.message
-                                  : 'Failed to delete meal';
-                              setError(errorMessage);
-                              notifications.show({
-                                title: 'Error',
-                                message: errorMessage,
-                                color: 'red',
-                              });
-                            } finally {
-                              setLoading(false);
-                            }
-                          }}
-                        >
-                          <IconTrash size="1rem" />
-                        </ActionIcon>
-                      </Group>
-                    </Group>
+                          // Refresh the diet details
+                          if (currentDiet?.id) {
+                            fetchDietDetails(currentDiet.id);
+                          }
+                        } catch (error) {
+                          const errorMessage =
+                            error instanceof Error
+                              ? error.message
+                              : 'Failed to delete dish';
+                          setError(errorMessage);
+                          notifications.show({
+                            title: 'Error',
+                            message: errorMessage,
+                            color: 'red',
+                          });
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                    >
+                      <IconTrash size="1rem" />
+                    </ActionIcon>
+                  </Group>
+                </Group>
 
-                    {/* Display nutritional info */}
-                    <Group mt="md">
-                      <Text size="sm">
-                        <b>Calories:</b> {meal.totalCalories || 0}
-                      </Text>
-                      <Text size="sm">
-                        <b>Carbs:</b> {meal.totalCarbs || 0}g
-                      </Text>
-                      <Text size="sm">
-                        <b>Fat:</b> {meal.totalFat || 0}g
-                      </Text>
-                      <Text size="sm">
-                        <b>Protein:</b> {meal.totalProtein || 0}g
-                      </Text>
-                    </Group>
-                  </Card>
-                );
-              })}
-            </Stack>
-          )}
+                <Text size="sm" mt="xs">
+                  {dish.description}
+                </Text>
 
-          {mealDishes.length === 0 ? (
-            <Text c="dimmed">No dishes added yet.</Text>
-          ) : (
-            <Stack gap="md">
-              {mealDishes.map((dish) => {
-                return (
-                  <Card key={dish.id} withBorder shadow="sm" padding="md">
-                    <Group justify="space-between">
-                      <Title order={4}>{dish.name}</Title>
-                      <Group>
-                        <ActionIcon
-                          variant="subtle"
-                          color="blue"
-                          onClick={() => {
-                            return handleOpenDishModal(mealType, dish);
-                          }}
-                        >
-                          <IconEdit size="1rem" />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          color="red"
-                          onClick={async () => {
-                            try {
-                              setLoading(true);
-
-                              // Find the meal this dish belongs to
-                              const meal = currentDiet?.meals?.find((m) => {
-                                return m.dishes?.some((d) => {
-                                  return d.id === dish.id;
-                                });
-                              });
-
-                              if (meal?.id) {
-                                // First remove the dish from the meal
-                                await removeDishFromMeal(meal.id, dish.id!);
-                              }
-
-                              // Then delete the dish
-                              await deleteDish(dish.id!);
-
-                              // Update local state
-                              setDishes((prevDishes) => {
-                                return prevDishes.filter((d) => {
-                                  return d.id !== dish.id;
-                                });
-                              });
-
-                              notifications.show({
-                                title: 'Success',
-                                message: 'Dish deleted successfully',
-                                color: 'green',
-                              });
-
-                              // Refresh the diet details
-                              if (currentDiet?.id) {
-                                fetchDietDetails(currentDiet.id);
-                              }
-                            } catch (error) {
-                              const errorMessage =
-                                error instanceof Error
-                                  ? error.message
-                                  : 'Failed to delete dish';
-                              setError(errorMessage);
-                              notifications.show({
-                                title: 'Error',
-                                message: errorMessage,
-                                color: 'red',
-                              });
-                            } finally {
-                              setLoading(false);
-                            }
-                          }}
-                        >
-                          <IconTrash size="1rem" />
-                        </ActionIcon>
-                      </Group>
-                    </Group>
-
-                    <Text size="sm" mt="xs">
-                      {dish.description}
-                    </Text>
-
-                    <Group mt="md">
-                      <Text size="sm">
-                        <b>Calories:</b> {dish.calories}
-                      </Text>
-                      <Text size="sm">
-                        <b>Carbs:</b> {dish.carbs}g
-                      </Text>
-                      <Text size="sm">
-                        <b>Fat:</b> {dish.fat}g
-                      </Text>
-                      <Text size="sm">
-                        <b>Protein:</b> {dish.protein}g
-                      </Text>
-                    </Group>
-                  </Card>
-                );
-              })}
-            </Stack>
-          )}
+                <Group mt="md">
+                  <Text size="sm">
+                    <b>Calories:</b> {dish.calories}
+                  </Text>
+                  <Text size="sm">
+                    <b>Carbs:</b> {dish.carbs}g
+                  </Text>
+                  <Text size="sm">
+                    <b>Fat:</b> {dish.fat}g
+                  </Text>
+                  <Text size="sm">
+                    <b>Protein:</b> {dish.protein}g
+                  </Text>
+                </Group>
+              </Card>
+            );
+          })}
         </Stack>
       );
     },
     [
       currentDiet,
+      setDishes,
+      handleOpenDishModal,
+      setLoading,
+      removeDishFromMeal,
+      deleteDish,
+      fetchDietDetails,
+      setError,
+    ],
+  );
+
+  // Render a meal with its dishes
+  const renderMeal = useCallback(
+    (meal: IGetMealDto) => {
+      const mealType = meal.type;
+      const mealName = mealType?.toString() ?? '';
+
+      return (
+        <Card key={meal.id} withBorder shadow="sm" padding="md">
+          <Group justify="space-between">
+            <Title order={4}>
+              {mealName} #{meal?.id?.substring(0, 4)}
+            </Title>
+            <Group>
+              <Button
+                leftSection={<IconPlus size="1rem" />}
+                onClick={() => {
+                  currentMealIdRef.current = meal.id;
+                  return handleOpenDishModal(mealType!);
+                }}
+              >
+                Add Dish
+              </Button>
+              <ActionIcon
+                variant="subtle"
+                color="blue"
+                onClick={() => {
+                  return handleOpenMealModal(mealType!, meal);
+                }}
+              >
+                <IconEdit size="1rem" />
+              </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                color="red"
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+
+                    if (currentDiet?.id) {
+                      // First remove the meal from the diet
+                      await removeMealFromDiet(currentDiet.id, meal.id!);
+                    }
+
+                    // Then delete the meal
+                    await deleteMeal(meal.id!);
+
+                    notifications.show({
+                      title: 'Success',
+                      message: 'Meal deleted successfully',
+                      color: 'green',
+                    });
+
+                    // Refresh the diet details
+                    if (currentDiet?.id) {
+                      fetchDietDetails(currentDiet.id);
+                    }
+                  } catch (error) {
+                    const errorMessage =
+                      error instanceof Error
+                        ? error.message
+                        : 'Failed to delete meal';
+                    setError(errorMessage);
+                    notifications.show({
+                      title: 'Error',
+                      message: errorMessage,
+                      color: 'red',
+                    });
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                <IconTrash size="1rem" />
+              </ActionIcon>
+            </Group>
+          </Group>
+
+          {/* Display nutritional info */}
+          <Group mt="md">
+            <Text size="sm">
+              <b>Calories:</b> {meal.totalCalories || 0}
+            </Text>
+            <Text size="sm">
+              <b>Carbs:</b> {meal.totalCarbs || 0}g
+            </Text>
+            <Text size="sm">
+              <b>Fat:</b> {meal.totalFat || 0}g
+            </Text>
+            <Text size="sm">
+              <b>Protein:</b> {meal.totalProtein || 0}g
+            </Text>
+          </Group>
+
+          {/* Display dishes */}
+          <Box mt="md">
+            <Title order={5} mb="sm">
+              Dishes
+            </Title>
+            {renderDishes(meal)}
+          </Box>
+        </Card>
+      );
+    },
+    [
+      currentDiet,
       currentMealIdRef,
-      dishes,
       handleOpenMealModal,
       handleOpenDishModal,
       setLoading,
@@ -851,9 +805,7 @@ export function DietPage() {
       deleteMeal,
       fetchDietDetails,
       setError,
-      removeDishFromMeal,
-      deleteDish,
-      setDishes,
+      renderDishes,
     ],
   );
 
@@ -864,33 +816,14 @@ export function DietPage() {
       <Paper shadow="md" p="xl" radius="md" withBorder>
         <Group justify={'space-between'} mb="xl">
           <Title order={1}>Diet Management</Title>
-          <Group>
-            {diets.length > 0 && (
-              <Select
-                label="Select Diet"
-                placeholder="Choose a diet"
-                data={dietOptions}
-                value={currentDiet?.id || null}
-                onChange={(value) => {
-                  const selected = diets.find((diet) => {
-                    return diet.id === value;
-                  });
-                  if (selected) {
-                    setCurrentDiet(selected);
-                  }
-                }}
-                w={200}
-              />
-            )}
-            <Button
-              leftSection={<IconPlus size="1rem" />}
-              onClick={() => {
-                return handleOpenDietModal();
-              }}
-            >
-              Create Diet
-            </Button>
-          </Group>
+          <Button
+            leftSection={<IconPlus size="1rem" />}
+            onClick={() => {
+              return handleOpenDietModal();
+            }}
+          >
+            Create Diet
+          </Button>
         </Group>
 
         {error && (
@@ -899,30 +832,75 @@ export function DietPage() {
           </Text>
         )}
 
-        <Tabs value={activeTab} onChange={setActiveTab}>
-          <Tabs.List>
-            <Tabs.Tab value="breakfast">Breakfast</Tabs.Tab>
-            <Tabs.Tab value="lunch">Lunch</Tabs.Tab>
-            <Tabs.Tab value="dinner">Dinner</Tabs.Tab>
-            <Tabs.Tab value="snacks">Snacks</Tabs.Tab>
-          </Tabs.List>
+        {diets.length === 0 ? (
+          <Text c="dimmed">
+            No diets available. Create a diet to get started.
+          </Text>
+        ) : (
+          <Accordion>
+            {diets.map((diet) => {
+              return (
+                <Accordion.Item key={diet.id} value={diet.id || ''}>
+                  <Accordion.Control>
+                    <Group justify="space-between">
+                      <Title order={3}>{diet.name}</Title>
+                      <Group>
+                        <Text size="sm">{diet.description}</Text>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={(event) => {
+                            // Stop propagation to prevent accordion from toggling
+                            event.stopPropagation();
+                            handleDeleteDiet(diet.id || '');
+                          }}
+                        >
+                          <IconTrash size="1rem" />
+                        </ActionIcon>
+                      </Group>
+                    </Group>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <Stack gap="md">
+                      <Group justify="space-between">
+                        <Text>Meals in this diet</Text>
+                        <Group>
+                          {Object.values(GetMealDtoType).map((mealType) => {
+                            return (
+                              <Button
+                                key={mealType}
+                                leftSection={<IconPlus size="1rem" />}
+                                onClick={() => {
+                                  setCurrentDiet(diet);
+                                  setCurrentMealType(mealType);
+                                  handleOpenMealModal(mealType);
+                                }}
+                              >
+                                Add{' '}
+                                {mealType?.charAt(0) +
+                                  mealType?.slice(1).toLowerCase()}
+                              </Button>
+                            );
+                          })}
+                        </Group>
+                      </Group>
 
-          <Tabs.Panel value="breakfast" pt="md">
-            {renderMealSection(MealType.BREAKFAST)}
-          </Tabs.Panel>
-
-          <Tabs.Panel value="lunch" pt="md">
-            {renderMealSection(MealType.LUNCH)}
-          </Tabs.Panel>
-
-          <Tabs.Panel value="dinner" pt="md">
-            {renderMealSection(MealType.DINNER)}
-          </Tabs.Panel>
-
-          <Tabs.Panel value="snacks" pt="md">
-            {renderMealSection(MealType.SNACKS)}
-          </Tabs.Panel>
-        </Tabs>
+                      {diet.meals && diet.meals.length > 0 ? (
+                        <Stack gap="lg">
+                          {diet.meals.map((meal) => {
+                            return renderMeal(meal);
+                          })}
+                        </Stack>
+                      ) : (
+                        <Text c="dimmed">No meals added to this diet yet.</Text>
+                      )}
+                    </Stack>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              );
+            })}
+          </Accordion>
+        )}
       </Paper>
 
       {/* Dish Modal */}
@@ -1034,6 +1012,8 @@ export function DietPage() {
         opened={mealModalOpened}
         onClose={closeMealModal}
         title={editingMeal ? 'Edit Meal' : 'Add New Meal'}
+        position={'left'}
+        //offset={100}
       >
         <form onSubmit={mealForm.onSubmit(handleMealSubmit)}>
           <Stack>
