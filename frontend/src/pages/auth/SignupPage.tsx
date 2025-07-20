@@ -19,29 +19,30 @@ import { IconLock, IconUser, IconMail } from '@tabler/icons-react';
 import { ISignupRequestDto } from '@clients';
 import { usePostSignup } from '@requests/authRequests.ts';
 import { notifications } from '@mantine/notifications';
+import { useNavigate } from 'react-router';
 
 export function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [signup] = usePostSignup();
-  // const [login] = usePostLogin();
+  const navigate = useNavigate();
 
   const form = useForm<ISignupRequestDto>({
-    validate: {
-      username: (value) => {
-        return value?.trim().length === 0 ? 'Username is required' : null;
-      },
-      email: (value) => {
-        return /^\S+@\S+$/.test(value ?? '') ? null : 'Invalid email';
-      },
-      password: (value) => {
-        return value && value.length < 6
-          ? 'Password must be at least 6 characters'
-          : null;
-      },
-      confirmPassword: (value, values) => {
-        return value !== values.password ? 'Passwords do not match' : null;
-      },
-    },
+    // validate: {
+    //   username: (value) => {
+    //     return value?.trim().length === 0 ? 'Username is required' : null;
+    //   },
+    //   email: (value) => {
+    //     return /^\S+@\S+$/.test(value ?? '') ? null : 'Invalid email';
+    //   },
+    //   password: (value) => {
+    //     return value && value.length < 6
+    //       ? 'Password must be at least 6 characters'
+    //       : null;
+    //   },
+    //   confirmPassword: (value, values) => {
+    //     return value !== values.password ? 'Passwords do not match' : null;
+    //   },
+    // },
   });
 
   const handleSubmit = (values: ISignupRequestDto) => {
@@ -50,10 +51,18 @@ export function SignupPage() {
       console.log(values);
       signup(values)
         .then(() => {
+          // onLogin({
+          //   username: values.username,
+          //   password: values.password,
+          // }).then((response) => {
+          //   console.log(response);
+          // });
           notifications.show({
             title: 'Success',
             message: 'Account created successfully',
+            color: 'green',
           });
+          navigate(routes.HOME, { replace: true });
         })
         .catch((err) => {
           console.log(err);
