@@ -1,16 +1,13 @@
 import { Outlet, Link, useLocation } from 'react-router';
-//import { useAuth } from '@hooks/useAuth.ts';
 import { routes } from '@routes';
 import {
   AppShell,
   Burger,
   Group,
   NavLink,
-  Button,
   Title,
   Avatar,
   Menu,
-  rem,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -20,16 +17,17 @@ import {
   IconBarbell,
   IconCategory,
   IconCalendarStats,
-  IconLogout,
   IconUser,
 } from '@tabler/icons-react';
+import { useAuth } from '@hooks/useAuth.tsx';
 
 export function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
   const location = useLocation();
+  const { onLogout } = useAuth();
 
   const navItems = [
-    { label: 'Home', icon: <IconHome size="1rem" />, to: routes.HOME },
+    { label: 'Home', icon: <IconHome size="1rem" />, to: routes.DIET },
     { label: 'Diet', icon: <IconSalad size="1rem" />, to: routes.DIET },
     {
       label: 'Weight Tracking',
@@ -82,25 +80,10 @@ export function AppLayout() {
                 </Avatar>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconLogout size={rem(14)} />}
-                  //onClick={logout}
-                >
-                  Logout
-                </Menu.Item>
+                <Menu.Item onClick={onLogout}>Logout</Menu.Item>
               </Menu.Dropdown>
             </Menu>
           }
-          (
-          <Group>
-            <Button component={Link} to={routes.LOGIN} variant="subtle">
-              Login
-            </Button>
-            <Button component={Link} to={routes.SIGNUP}>
-              Sign Up
-            </Button>
-          </Group>
-          )
         </Group>
       </AppShell.Header>
 

@@ -16,14 +16,13 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAt, IconLock } from '@tabler/icons-react';
-//import { usePostLogin } from '@requests/authRequests.ts';
 import { ILoginRequestDto } from '@clients';
 import { useAuth } from '@hooks/useAuth.tsx';
 import { notifications } from '@mantine/notifications';
+import classes from './LoginPage.module.css';
 
 export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
-  // const [login] = usePostLogin();
   const { onLogin } = useAuth();
   const navigate = useNavigate();
 
@@ -67,6 +66,18 @@ export function LoginPage() {
       <Title ta="center">Welcome to Tamaliftics!</Title>
       <Text c="dimmed" size="sm" ta="center" mt={5}>
         Log in to your account to continue
+      </Text>
+      <Text
+        className={classes['go-back-anchor']}
+        c="dimmed"
+        size="sm"
+        ta="center"
+        mt={5}
+        onClick={() => {
+          return navigate(routes.HOME);
+        }}
+      >
+        Go back Home
       </Text>
 
       <Paper withBorder shadow="md" p={30} mt={30} radius="md">

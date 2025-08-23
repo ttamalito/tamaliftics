@@ -1,0 +1,6 @@
+
+.go-back-anchor:hover {
+  cursor: pointer;
+    color: blue;
+  text-decoration: underline blue;
+}

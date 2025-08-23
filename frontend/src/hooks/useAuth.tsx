@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const response = await loginRequest(loginModel);
         const token: string = response?.data.token;
         setToken(token);
-        const destination: string = location.state?.from || routes.HOME;
+        const destination: string = location.state?.from || routes.CONTENT;
         return Promise.resolve(destination);
       } catch (error: any) {
         if (error.response?.status === 401) {

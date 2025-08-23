@@ -15,11 +15,11 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
+        <Route path={''} element={<HomePage />} />
         <Route path={routes.LOGIN} element={<LoginPage />} />
         <Route path={routes.SIGNUP} element={<SignupPage />} />
 
-        <Route element={<AppLayout />}>
-          <Route path={routes.HOME} element={<HomePage />} />
+        <Route path={routes.CONTENT} element={<AppLayout />}>
           <Route path={routes.DIET} element={<DietPage />} />
           <Route path={routes.WEIGHT} element={<WeightPage />} />
           <Route

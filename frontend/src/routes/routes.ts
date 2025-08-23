@@ -2,11 +2,12 @@ export const routes = {
   HOME: '/',
   LOGIN: '/login',
   SIGNUP: '/signup',
-  DIET: '/diet',
-  WEIGHT: '/weight',
-  EXERCISE_CATEGORIES: '/exercise-categories',
-  EXERCISES: '/exercises',
-  WORKOUT_PLAN: '/workout-plan',
+  DIET: 'diet',
+  WEIGHT: 'weight',
+  EXERCISE_CATEGORIES: 'exercise-categories',
+  EXERCISES: 'exercises',
+  WORKOUT_PLAN: 'workout-plan',
+  CONTENT: '/content',
 };
 
 export const PROTECTED_ROUTES = [

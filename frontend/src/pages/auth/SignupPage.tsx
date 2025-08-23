@@ -20,6 +20,7 @@ import { ISignupRequestDto } from '@clients';
 import { usePostSignup } from '@requests/authRequests.ts';
 import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router';
+import classes from './SignupPage.module.css';
 
 export function SignupPage() {
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +79,18 @@ export function SignupPage() {
       <Title ta="center">Create an account</Title>
       <Text c="dimmed" size="sm" ta="center" mt={5}>
         Sign up to start tracking your fitness journey
+      </Text>
+      <Text
+        className={classes['go-back-anchor']}
+        c="dimmed"
+        size="sm"
+        ta="center"
+        mt={5}
+        onClick={() => {
+          navigate(routes.HOME);
+        }}
+      >
+        Go back Home
       </Text>
 
       <Paper withBorder shadow="md" p={30} mt={30} radius="md">
