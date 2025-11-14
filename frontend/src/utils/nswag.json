@@ -2045,6 +2045,9 @@
               "SNACKS"
             ]
           },
+          "name": {
+            "type": "string"
+          },
           "dishIds": {
             "type": "array",
             "items": {
@@ -2263,6 +2266,9 @@
               "DINNER",
               "SNACKS"
             ]
+          },
+          "name": {
+            "type": "string"
           },
           "dishIds": {
             "type": "array",
@@ -2667,6 +2673,9 @@
             "items": {
               "$ref": "#/components/schemas/GetDishDto"
             }
+          },
+          "name": {
+            "type": "string"
           },
           "totalCalories": {
             "type": "number",

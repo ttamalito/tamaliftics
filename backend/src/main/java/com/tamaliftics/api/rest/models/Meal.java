@@ -33,18 +33,22 @@ public class Meal {
     @JoinColumn(name = "diet_id")
     private Diet diet;
 
+    @Column(nullable = true)
+    private String name;
     public Meal() {
     }
 
-    public Meal(MealType type, User user) {
+    public Meal(MealType type, User user, String name) {
         this.type = type;
         this.user = user;
+        this.name = name;
     }
 
-    public Meal(MealType type, User user, Diet diet) {
+    public Meal(MealType type, User user, Diet diet, String name) {
         this.type = type;
         this.user = user;
         this.diet = diet;
+        this.name = name;
     }
 
     public UUID getId() {
@@ -125,5 +129,13 @@ public class Meal {
      */
     public double getTotalProtein() {
         return dishes.stream().mapToDouble(Dish::getProtein).sum();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

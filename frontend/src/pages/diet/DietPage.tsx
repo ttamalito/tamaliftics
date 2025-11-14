@@ -237,6 +237,7 @@ export function DietPage() {
   const mealForm = useForm<ICreateMealDto>({
     initialValues: {
       type: CreateMealDtoType.BREAKFAST,
+      name: '',
       dishIds: [],
     },
     validate: {
@@ -296,12 +297,14 @@ export function DietPage() {
             meal.dishes?.map((dish) => {
               return dish.id!;
             }) || [],
+          name: meal.name || '',
         });
       } else {
         setEditingMeal(null);
         mealForm.setValues({
           type: mealType as unknown as CreateMealDtoType,
           dishIds: [],
+          name: undefined,
         });
       }
       openMealModal();
@@ -702,7 +705,7 @@ export function DietPage() {
         <Card key={meal.id} withBorder shadow="sm" padding="md">
           <Group justify="space-between">
             <Title order={4}>
-              {mealName} #{meal?.id?.substring(0, 4)}
+              {mealName} - {meal?.name}
             </Title>
             <Group>
               <Button
@@ -1017,6 +1020,12 @@ export function DietPage() {
       >
         <form onSubmit={mealForm.onSubmit(handleMealSubmit)}>
           <Stack>
+            <TextInput
+              label="Name"
+              placeholder="Meal name"
+              key={mealForm.key('name')}
+              {...mealForm.getInputProps('name')}
+            />
             <Select
               label="Meal Type"
               placeholder="Select meal type"
@@ -1027,7 +1036,7 @@ export function DietPage() {
             />
 
             {/* If we have available dishes, show a multi-select */}
-            {dishes.length > 0 && (
+            {dishes.length > 15000 && (
               <Select
                 label="Add Dish"
                 placeholder="Select a dish to add"

@@ -13,6 +13,7 @@ public record GetMealDto(
     UUID id,
     MealType type,
     List<GetDishDto> dishes,
+    String name,
     double totalCalories,
     double totalCarbs,
     double totalFat,

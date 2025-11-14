@@ -14,6 +14,7 @@ public record UpdateMealDto(
     UUID id,
     
     MealType type,
+    String name,
     
     List<UUID> dishIds
 ) {

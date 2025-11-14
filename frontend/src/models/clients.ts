@@ -82,6 +82,7 @@ export interface IUpdateWorkoutPlanDto {
 export class UpdateMealDto implements IUpdateMealDto {
     id!: string;
     type?: UpdateMealDtoType;
+    name?: string;
     dishIds?: string[];
 
     [key: string]: any;
@@ -103,6 +104,7 @@ export class UpdateMealDto implements IUpdateMealDto {
             }
             this.id = _data["id"];
             this.type = _data["type"];
+            this.name = _data["name"];
             if (Array.isArray(_data["dishIds"])) {
                 this.dishIds = [] as any;
                 for (let item of _data["dishIds"])
@@ -126,6 +128,7 @@ export class UpdateMealDto implements IUpdateMealDto {
         }
         data["id"] = this.id;
         data["type"] = this.type;
+        data["name"] = this.name;
         if (Array.isArray(this.dishIds)) {
             data["dishIds"] = [];
             for (let item of this.dishIds)
@@ -138,6 +141,7 @@ export class UpdateMealDto implements IUpdateMealDto {
 export interface IUpdateMealDto {
     id: string;
     type?: UpdateMealDtoType;
+    name?: string;
     dishIds?: string[];
 
     [key: string]: any;
@@ -597,6 +601,7 @@ export interface ICreateWorkoutPlanDto {
 
 export class CreateMealDto implements ICreateMealDto {
     type!: CreateMealDtoType;
+    name?: string;
     dishIds?: string[];
 
     [key: string]: any;
@@ -617,6 +622,7 @@ export class CreateMealDto implements ICreateMealDto {
                     this[property] = _data[property];
             }
             this.type = _data["type"];
+            this.name = _data["name"];
             if (Array.isArray(_data["dishIds"])) {
                 this.dishIds = [] as any;
                 for (let item of _data["dishIds"])
@@ -639,6 +645,7 @@ export class CreateMealDto implements ICreateMealDto {
                 data[property] = this[property];
         }
         data["type"] = this.type;
+        data["name"] = this.name;
         if (Array.isArray(this.dishIds)) {
             data["dishIds"] = [];
             for (let item of this.dishIds)
@@ -650,6 +657,7 @@ export class CreateMealDto implements ICreateMealDto {
 
 export interface ICreateMealDto {
     type: CreateMealDtoType;
+    name?: string;
     dishIds?: string[];
 
     [key: string]: any;
@@ -1571,6 +1579,7 @@ export class GetMealDto implements IGetMealDto {
     id?: string;
     type?: GetMealDtoType;
     dishes?: GetDishDto[];
+    name?: string;
     totalCalories?: number;
     totalCarbs?: number;
     totalFat?: number;
@@ -1601,6 +1610,7 @@ export class GetMealDto implements IGetMealDto {
                 for (let item of _data["dishes"])
                     this.dishes!.push(GetDishDto.fromJS(item));
             }
+            this.name = _data["name"];
             this.totalCalories = _data["totalCalories"];
             this.totalCarbs = _data["totalCarbs"];
             this.totalFat = _data["totalFat"];
@@ -1629,6 +1639,7 @@ export class GetMealDto implements IGetMealDto {
             for (let item of this.dishes)
                 data["dishes"].push(item.toJSON());
         }
+        data["name"] = this.name;
         data["totalCalories"] = this.totalCalories;
         data["totalCarbs"] = this.totalCarbs;
         data["totalFat"] = this.totalFat;
@@ -1642,6 +1653,7 @@ export interface IGetMealDto {
     id?: string;
     type?: GetMealDtoType;
     dishes?: GetDishDto[];
+    name?: string;
     totalCalories?: number;
     totalCarbs?: number;
     totalFat?: number;

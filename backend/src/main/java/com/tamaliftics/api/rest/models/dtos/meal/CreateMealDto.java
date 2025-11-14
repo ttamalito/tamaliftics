@@ -12,7 +12,7 @@ import java.util.UUID;
 public record CreateMealDto(
     @NotNull(message = "Meal type is required")
     MealType type,
-    
+    String name,
     List<UUID> dishIds
 ) {
 }

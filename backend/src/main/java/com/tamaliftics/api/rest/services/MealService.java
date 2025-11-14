@@ -52,7 +52,7 @@ public class MealService {
         }
 
         User user = userOptional.get();
-        Meal meal = new Meal(createMealDto.type(), user);
+        Meal meal = new Meal(createMealDto.type(), user, createMealDto.name());
 
         // Add dishes to the meal if dish IDs are provided
         if (createMealDto.dishIds() != null && !createMealDto.dishIds().isEmpty()) {
@@ -83,13 +83,15 @@ public class MealService {
             meal.setType(updateMealDto.type());
         }
 
+        meal.setName(updateMealDto.name());
+
         // Update dishes if dish IDs are provided
-        if (updateMealDto.dishIds() != null) {
-            List<Dish> dishes = dishRepository.findAllById(updateMealDto.dishIds()).stream()
-                    .filter(dish -> dish.getUser().getId().equals(userId))
-                    .collect(Collectors.toList());
-            meal.setDishes(dishes);
-        }
+//        if (updateMealDto.dishIds() != null) {
+//            List<Dish> dishes = dishRepository.findAllById(updateMealDto.dishIds()).stream()
+//                    .filter(dish -> dish.getUser().getId().equals(userId))
+//                    .collect(Collectors.toList());
+//            meal.setDishes(dishes);
+//        }
 
         Meal updatedMeal = mealRepository.save(meal);
         return Optional.of(mapToGetMealDto(updatedMeal));
@@ -211,6 +213,7 @@ public class MealService {
                 meal.getId(),
                 meal.getType(),
                 dishDtos,
+                meal.getName(),
                 meal.getTotalCalories(),
                 meal.getTotalCarbs(),
                 meal.getTotalFat(),
